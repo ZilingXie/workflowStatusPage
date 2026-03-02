@@ -2,3 +2,11 @@
 .env
 .env.*
 !.env.example
+
+# Node artifacts
+node_modules
+.next
+dist
+
+# Prisma / logs
+*.log

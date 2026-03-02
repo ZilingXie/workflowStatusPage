@@ -1,0 +1,74 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum IncidentStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+}
+
+enum UserRole {
+  ADMIN
+  OPERATOR
+}
+
+model Incident {
+  id               String            @id @default(uuid()) @db.Uuid
+  sourceInstance   String            @map("source_instance")
+  workflowId       String            @map("workflow_id")
+  workflowName     String            @map("workflow_name")
+  executionId      String            @map("execution_id")
+  failedAt         DateTime          @map("failed_at") @db.Timestamptz(6)
+  errorMessage     String            @map("error_message")
+  errorNodeName    String?           @map("error_node_name")
+  errorType        String?           @map("error_type")
+  errorStack       String?           @map("error_stack")
+  executionUrl     String            @map("execution_url")
+  status           IncidentStatus    @default(OPEN)
+  resolutionReason String?           @map("resolution_reason")
+  resolvedBy       String?           @map("resolved_by")
+  resolvedAt       DateTime?         @map("resolved_at") @db.Timestamptz(6)
+  createdAt        DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+  events           IncidentEvent[]
+  rawPayloads      IncidentRawPayload[]
+
+  @@unique([sourceInstance, executionId])
+  @@index([status])
+  @@index([failedAt(sort: Desc)])
+  @@index([workflowName])
+  @@index([failedAt, status])
+  @@map("incidents")
+}
+
+model IncidentEvent {
+  id            String         @id @default(uuid()) @db.Uuid
+  incidentId    String         @map("incident_id") @db.Uuid
+  fromStatus    IncidentStatus @map("from_status")
+  toStatus      IncidentStatus @map("to_status")
+  actionReason  String?        @map("action_reason")
+  actorUsername String         @map("actor_username")
+  actorRole     UserRole       @map("actor_role")
+  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  incident      Incident       @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+
+  @@index([incidentId])
+  @@map("incident_events")
+}
+
+model IncidentRawPayload {
+  id         String   @id @default(uuid()) @db.Uuid
+  incidentId String   @map("incident_id") @db.Uuid
+  payload    Json
+  receivedAt DateTime @default(now()) @map("received_at") @db.Timestamptz(6)
+  incident   Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+
+  @@index([incidentId])
+  @@map("incident_raw_payloads")
+}
