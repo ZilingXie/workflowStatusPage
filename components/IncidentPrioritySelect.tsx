@@ -1,8 +1,10 @@
 "use client";
 
 import { IncidentPriority } from "@prisma/client";
+import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { PriorityBadge } from "@/components/PriorityBadge";
 
 type Props = {
   incidentId: string;
@@ -10,13 +12,11 @@ type Props = {
 };
 
 const OPTIONS: IncidentPriority[] = [IncidentPriority.L, IncidentPriority.M, IncidentPriority.H];
-const MIN_LOADING_MS = 1000;
 
 export function IncidentPrioritySelect({ incidentId, initialPriority }: Props): JSX.Element {
   const router = useRouter();
   const [priority, setPriority] = useState<IncidentPriority>(initialPriority);
   const [loading, setLoading] = useState(false);
-  const [pendingPriority, setPendingPriority] = useState<IncidentPriority | null>(null);
   const changeTargets = OPTIONS.filter((option) => option !== priority);
 
   async function onChange(nextPriority: IncidentPriority): Promise<void> {
@@ -24,10 +24,7 @@ export function IncidentPrioritySelect({ incidentId, initialPriority }: Props): 
       return;
     }
 
-    const startedAt = Date.now();
     setLoading(true);
-    setPendingPriority(nextPriority);
-
     try {
       const response = await fetch(`/api/v1/incidents/${incidentId}/priority`, {
         method: "PATCH",
@@ -43,57 +40,38 @@ export function IncidentPrioritySelect({ incidentId, initialPriority }: Props): 
 
       setPriority(nextPriority);
       router.refresh();
-    } catch {
-      return;
     } finally {
-      const elapsedMs = Date.now() - startedAt;
-      if (elapsedMs < MIN_LOADING_MS) {
-        await new Promise<void>((resolve) => {
-          window.setTimeout(() => resolve(), MIN_LOADING_MS - elapsedMs);
-        });
-      }
       setLoading(false);
-      setPendingPriority(null);
     }
   }
 
   return (
-    <div className="priority-control" role="group" aria-label="Priority" aria-busy={loading}>
-      <span className="priority-current-label">
-        Current:{" "}
-        <span className={`priority-current-value badge priority-badge priority-${priority}`}>
-          {priority}
-        </span>
-      </span>
-      <span className="priority-divider" aria-hidden>
-        |
-      </span>
-      <span className="priority-change-label">Change to</span>
-      <div className="priority-actions">
+    <div className="flex flex-wrap items-center gap-2 text-sm">
+      <span className="font-medium text-foreground">Current Priority:</span>
+      <PriorityBadge priority={priority} />
+      <span className="text-muted-foreground">|</span>
+      <span className="font-medium text-foreground">Change To:</span>
+      <div className="flex items-center gap-2">
         {changeTargets.map((option) => (
           <button
             type="button"
             key={option}
-            aria-label={`Change priority to ${option}`}
-            className={`priority-option priority-${option}`}
+            onClick={() => {
+              void onChange(option);
+            }}
             disabled={loading}
-            onClick={() => onChange(option)}
+            aria-label={`Change priority to ${option}`}
+            className="h-auto min-h-0 rounded-full border-0 bg-transparent p-0 hover:bg-transparent disabled:opacity-50"
           >
-            {option}
+            <PriorityBadge priority={option} />
           </button>
         ))}
       </div>
-      {loading && pendingPriority ? (
-        <span
-          className={`priority-loading priority-loading-float priority-${pendingPriority}`}
-          role="status"
-          aria-live="polite"
-        >
-          <span className="priority-loading-spinner" aria-hidden />
-          Changing to
-          <span className={`badge priority-badge priority-${pendingPriority}`}>{pendingPriority}</span>
-        </span>
-      ) : null}
+      <span className="ml-1 inline-flex h-4 w-4 items-center justify-center" aria-hidden={!loading}>
+        <Loader2
+          className={`h-3.5 w-3.5 text-muted-foreground ${loading ? "animate-spin opacity-100" : "opacity-0"}`}
+        />
+      </span>
     </div>
   );
 }
