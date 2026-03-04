@@ -11,7 +11,7 @@ export default function LoginPage(): JSX.Element {
   }
 
   return (
-    <main>
+    <main className="auth-main login-main">
       <LoginForm />
     </main>
   );

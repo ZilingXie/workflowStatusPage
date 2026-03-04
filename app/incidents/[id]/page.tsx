@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { AppShell } from "@/components/AppShell";
+import { IncidentPrioritySelect } from "@/components/IncidentPrioritySelect";
 import { IncidentStatusForm } from "@/components/IncidentStatusForm";
 import { requireServerSession } from "@/lib/auth/server";
 import { prisma } from "@/lib/db";
@@ -36,16 +38,19 @@ export default async function IncidentDetailPage({ params }: Params): Promise<JS
     notFound();
   }
 
+  const workflowHref =
+    incident.workflowId.startsWith("http://") || incident.workflowId.startsWith("https://")
+      ? incident.workflowId
+      : null;
+
   return (
-    <main className="stack">
-      <div className="actions">
-        <Link href="/incidents">Back to list</Link>
-      </div>
-
+    <AppShell
+      session={session}
+      title="Incident Detail"
+      subtitle={`Incident ID: ${incident.id}`}
+      topRightActions={<Link href="/incidents">Back to list</Link>}
+    >
       <section className="card stack">
-        <h1>Incident Detail</h1>
-        <p className="muted">ID: {incident.id}</p>
-
         <table>
           <tbody>
             <tr>
@@ -55,38 +60,42 @@ export default async function IncidentDetailPage({ params }: Params): Promise<JS
               </td>
             </tr>
             <tr>
+              <th>Priority</th>
+              <td>
+                <IncidentPrioritySelect incidentId={incident.id} initialPriority={incident.priority} />
+              </td>
+            </tr>
+            <tr>
               <th>Failed At (UTC)</th>
               <td>{incident.failedAt.toISOString()}</td>
             </tr>
             <tr>
               <th>Workflow</th>
               <td>
-                {incident.workflowName} ({incident.workflowId})
+                {workflowHref ? (
+                  <a href={workflowHref} target="_blank" rel="noreferrer">
+                    {incident.workflowName}
+                  </a>
+                ) : (
+                  incident.workflowName
+                )}
               </td>
             </tr>
             <tr>
               <th>Execution ID</th>
-              <td>{incident.executionId}</td>
-            </tr>
-            <tr>
-              <th>Execution Link</th>
               <td>
                 <a href={incident.executionUrl} target="_blank" rel="noreferrer">
-                  Open in n8n
+                  {incident.executionId}
                 </a>
               </td>
             </tr>
             <tr>
-              <th>Error Message</th>
+              <th>Summary</th>
               <td>{incident.errorMessage}</td>
             </tr>
             <tr>
-              <th>Error Node</th>
-              <td>{incident.errorNodeName ?? "-"}</td>
-            </tr>
-            <tr>
-              <th>Error Type</th>
-              <td>{incident.errorType ?? "-"}</td>
+              <th>Description</th>
+              <td>{incident.errorStack?.trim() ? incident.errorStack : "-"}</td>
             </tr>
             <tr>
               <th>Resolved By</th>
@@ -135,15 +144,25 @@ export default async function IncidentDetailPage({ params }: Params): Promise<JS
       </section>
 
       <section className="card stack">
-        <h2>Latest Raw Payload</h2>
         {incident.rawPayloads.length === 0 ? (
-          <p className="muted">No payload found.</p>
+          <>
+            <h2>Latest Raw Payload</h2>
+            <p className="muted">No payload found.</p>
+          </>
         ) : (
-          <pre style={{ margin: 0, overflowX: "auto" }}>
-            {JSON.stringify(incident.rawPayloads[0].payload, null, 2)}
-          </pre>
+          <details className="payload-fold">
+            <summary className="payload-fold-summary">
+              <span className="payload-fold-triangle" aria-hidden>
+                ▸
+              </span>
+              <h2>Latest Raw Payload</h2>
+            </summary>
+            <pre className="payload-fold-content">
+              {JSON.stringify(incident.rawPayloads[0].payload, null, 2)}
+            </pre>
+          </details>
         )}
       </section>
-    </main>
+    </AppShell>
   );
 }

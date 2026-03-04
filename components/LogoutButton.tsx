@@ -3,7 +3,11 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-export function LogoutButton(): JSX.Element {
+type Props = {
+  className?: string;
+};
+
+export function LogoutButton({ className }: Props): JSX.Element {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
@@ -19,7 +23,12 @@ export function LogoutButton(): JSX.Element {
   }
 
   return (
-    <button type="button" className="ghost" onClick={onLogout} disabled={loading}>
+    <button
+      type="button"
+      className={className ?? "ghost"}
+      onClick={onLogout}
+      disabled={loading}
+    >
       {loading ? "Signing out..." : "Sign out"}
     </button>
   );

@@ -54,7 +54,7 @@ export function IncidentStatusForm({ incidentId, status, role }: Props): JSX.Ele
       {status === IncidentStatus.OPEN ? (
         <div className="stack">
           <label className="stack">
-            <span>Action reason (optional)</span>
+            <span>Action reason (optional, default: start working)</span>
             <textarea
               value={actionReason}
               onChange={(event) => setActionReason(event.target.value)}

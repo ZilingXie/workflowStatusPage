@@ -25,9 +25,13 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       select: {
         id: true,
         failedAt: true,
+        workflowId: true,
         workflowName: true,
         executionId: true,
+        executionUrl: true,
+        priority: true,
         errorMessage: true,
+        errorStack: true,
         status: true,
         resolvedBy: true,
         updatedAt: true
@@ -40,6 +44,14 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     page: filters.page,
     pageSize: filters.pageSize,
     total,
-    items: incidents
+    items: incidents.map((incident) => ({
+      ...incident,
+      workflowURL: incident.workflowId,
+      executionID: incident.executionId,
+      executionURL: incident.executionUrl,
+      summary: incident.errorMessage,
+      description: incident.errorStack ?? "",
+      priority: incident.priority
+    }))
   });
 }

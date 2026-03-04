@@ -1,12 +1,25 @@
-import { IncidentStatus } from "@prisma/client";
+import { IncidentPriority, IncidentStatus } from "@prisma/client";
 import Link from "next/link";
+import { AppShell } from "@/components/AppShell";
 import { AutoRefresh } from "@/components/AutoRefresh";
-import { LogoutButton } from "@/components/LogoutButton";
+import { UtcDateTimeFilterInput } from "@/components/UtcDateTimeFilterInput";
+import { WorkflowFilterSelect } from "@/components/WorkflowFilterSelect";
 import { requireServerSession } from "@/lib/auth/server";
 import { prisma } from "@/lib/db";
 import { buildIncidentWhere, parseIncidentFilters } from "@/lib/incidents";
 
 type SearchParams = Record<string, string | string[] | undefined>;
+const DEFAULT_FILTER_WINDOW_MS = 24 * 60 * 60 * 1000;
+const STATUS_FILTER_OPTIONS: IncidentStatus[] = [
+  IncidentStatus.OPEN,
+  IncidentStatus.IN_PROGRESS,
+  IncidentStatus.RESOLVED
+];
+const PRIORITY_FILTER_OPTIONS: IncidentPriority[] = [
+  IncidentPriority.L,
+  IncidentPriority.M,
+  IncidentPriority.H
+];
 
 function asString(value: string | string[] | undefined): string | undefined {
   if (Array.isArray(value)) {
@@ -35,17 +48,33 @@ function buildPageLink(params: URLSearchParams, page: number): string {
   return `/incidents?${next.toString()}`;
 }
 
+function isHttpUrl(value: string): boolean {
+  return value.startsWith("http://") || value.startsWith("https://");
+}
+
 export default async function IncidentsPage({
   searchParams = {}
 }: {
   searchParams?: SearchParams;
 }): Promise<JSX.Element> {
   const session = requireServerSession();
-  const rawParams = toSearchParams(searchParams);
+  const now = new Date();
+  const fromParam = asString(searchParams.from);
+  const toParam = asString(searchParams.to);
+  const shouldApplyDefaultWindow = !fromParam && !toParam;
+  const defaultFrom = new Date(now.getTime() - DEFAULT_FILTER_WINDOW_MS).toISOString();
+  const defaultTo = now.toISOString();
+  const effectiveFrom = shouldApplyDefaultWindow ? defaultFrom : fromParam;
+  const effectiveTo = shouldApplyDefaultWindow ? defaultTo : toParam;
+  const rawParams = toSearchParams({
+    ...searchParams,
+    ...(effectiveFrom ? { from: effectiveFrom } : {}),
+    ...(effectiveTo ? { to: effectiveTo } : {})
+  });
   const filters = parseIncidentFilters(rawParams);
   const where = buildIncidentWhere(filters);
 
-  const [total, items, grouped] = await prisma.$transaction([
+  const [total, items, statusCountsRaw, workflowOptionsRaw] = await Promise.all([
     prisma.incident.count({ where }),
     prisma.incident.findMany({
       where,
@@ -57,8 +86,11 @@ export default async function IncidentsPage({
       select: {
         id: true,
         failedAt: true,
+        workflowId: true,
         workflowName: true,
         executionId: true,
+        executionUrl: true,
+        priority: true,
         errorMessage: true,
         status: true,
         resolvedBy: true
@@ -66,47 +98,57 @@ export default async function IncidentsPage({
     }),
     prisma.incident.groupBy({
       by: ["status"],
+      orderBy: {
+        status: "asc"
+      },
       _count: {
-        _all: true
+        status: true
       }
+    }),
+    prisma.incident.groupBy({
+      by: ["workflowName"],
+      orderBy: {
+        workflowName: "asc"
+      },
+      take: 1000
     })
-  ]);
+  ] as const);
+
+  const workflowOptions = Array.from(
+    new Set(
+      workflowOptionsRaw
+        .map((item) => item.workflowName.trim())
+        .filter((name) => name.length > 0)
+    )
+  );
+  const workflowFilterOptions = ["", ...workflowOptions];
+
+  const statusFilterOptions = ["", ...STATUS_FILTER_OPTIONS];
+  const priorityFilterOptions = ["", ...PRIORITY_FILTER_OPTIONS];
 
   const statusCounts: Record<IncidentStatus, number> = {
     OPEN: 0,
     IN_PROGRESS: 0,
     RESOLVED: 0
   };
-
-  for (const item of grouped) {
-    statusCounts[item.status] = item._count._all;
+  for (const row of statusCountsRaw) {
+    statusCounts[row.status] = row._count.status;
   }
 
   const totalPages = Math.max(1, Math.ceil(total / filters.pageSize));
 
   return (
-    <main className="stack">
+    <AppShell
+      session={session}
+      title="Incidents"
+      subtitle="Track failed workflows and response lifecycle"
+      topRightActions={
+        session.role === "ADMIN" ? (
+          <a href={`/api/v1/incidents/export.csv?${rawParams.toString()}`}>Export CSV</a>
+        ) : null
+      }
+    >
       <AutoRefresh intervalMs={15000} />
-
-      <div className="card" style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-        <div className="stack" style={{ gap: 4 }}>
-          <h1>Incidents</h1>
-          <p className="muted">
-            Signed in as {session.username} ({session.role})
-          </p>
-        </div>
-        <div className="actions">
-          {session.role === "ADMIN" ? (
-            <a
-              href={`/api/v1/incidents/export.csv?${rawParams.toString()}`}
-              style={{ alignSelf: "center" }}
-            >
-              Export CSV
-            </a>
-          ) : null}
-          <LogoutButton />
-        </div>
-      </div>
 
       <section className="kpi-grid">
         <article className="card stack" style={{ gap: 4 }}>
@@ -126,34 +168,62 @@ export default async function IncidentsPage({
       <section className="card stack">
         <h2>Filters</h2>
         <form method="GET" className="form-row">
-          <label className="stack" style={{ gap: 4 }}>
+          <label className="stack status-filter-field" style={{ gap: 4 }}>
             <span>Status</span>
-            <select name="status" defaultValue={filters.status ?? ""}>
-              <option value="">All</option>
-              <option value={IncidentStatus.OPEN}>OPEN</option>
-              <option value={IncidentStatus.IN_PROGRESS}>IN_PROGRESS</option>
-              <option value={IncidentStatus.RESOLVED}>RESOLVED</option>
-            </select>
+            <WorkflowFilterSelect
+              name="status"
+              initialValue={filters.status ?? ""}
+              options={statusFilterOptions}
+              emptyOptionLabel="All"
+              placeholder="Select status"
+              autoSubmitOnSelect
+            />
           </label>
 
           <label className="stack" style={{ gap: 4 }}>
             <span>Workflow</span>
-            <input name="workflow" defaultValue={filters.workflow ?? ""} placeholder="workflow name" />
+            <WorkflowFilterSelect
+              name="workflow"
+              initialValue={filters.workflow ?? ""}
+              options={workflowFilterOptions}
+              placeholder="All workflow"
+              emptyOptionLabel="All workflow"
+              autoSubmitOnSelect
+            />
+          </label>
+
+          <label className="stack priority-filter-field" style={{ gap: 4 }}>
+            <span>Priority</span>
+            <WorkflowFilterSelect
+              name="priority"
+              initialValue={filters.priority ?? ""}
+              options={priorityFilterOptions}
+              emptyOptionLabel="All priority"
+              placeholder="Select priority"
+              autoSubmitOnSelect
+            />
           </label>
 
           <label className="stack" style={{ gap: 4 }}>
-            <span>From (ISO UTC)</span>
-            <input name="from" defaultValue={asString(searchParams.from) ?? ""} placeholder="2026-03-01T00:00:00Z" />
+            <span>From (UTC)</span>
+            <UtcDateTimeFilterInput
+              name="from"
+              initialValue={effectiveFrom ?? ""}
+              autoSubmitOnChange
+            />
           </label>
 
           <label className="stack" style={{ gap: 4 }}>
-            <span>To (ISO UTC)</span>
-            <input name="to" defaultValue={asString(searchParams.to) ?? ""} placeholder="2026-03-02T23:59:59Z" />
+            <span>To (UTC)</span>
+            <UtcDateTimeFilterInput
+              name="to"
+              initialValue={effectiveTo ?? ""}
+              autoSubmitOnChange
+            />
           </label>
 
           <input type="hidden" name="pageSize" value={String(filters.pageSize)} />
-          <button type="submit">Apply</button>
-          <Link href="/incidents" style={{ alignSelf: "end" }}>
+          <Link href="/incidents" className="filter-reset-button" style={{ alignSelf: "end" }}>
             Reset
           </Link>
         </form>
@@ -167,7 +237,8 @@ export default async function IncidentsPage({
               <th>Failed At (UTC)</th>
               <th>Workflow</th>
               <th>Execution ID</th>
-              <th>Error Summary</th>
+              <th>Summary</th>
+              <th>Priority</th>
               <th>Status</th>
               <th>Handler</th>
               <th>Actions</th>
@@ -176,7 +247,7 @@ export default async function IncidentsPage({
           <tbody>
             {items.length === 0 ? (
               <tr>
-                <td colSpan={7} className="muted">
+                <td colSpan={8} className="muted">
                   No incidents found.
                 </td>
               </tr>
@@ -184,9 +255,26 @@ export default async function IncidentsPage({
               items.map((incident) => (
                 <tr key={incident.id}>
                   <td>{incident.failedAt.toISOString()}</td>
-                  <td>{incident.workflowName}</td>
-                  <td>{incident.executionId}</td>
+                  <td>
+                    {isHttpUrl(incident.workflowId) ? (
+                      <a href={incident.workflowId} target="_blank" rel="noreferrer">
+                        {incident.workflowName}
+                      </a>
+                    ) : (
+                      incident.workflowName
+                    )}
+                  </td>
+                  <td>
+                    <a href={incident.executionUrl} target="_blank" rel="noreferrer">
+                      {incident.executionId}
+                    </a>
+                  </td>
                   <td title={incident.errorMessage}>{incident.errorMessage.slice(0, 120)}</td>
+                  <td>
+                    <span className={`badge priority-badge priority-${incident.priority}`}>
+                      {incident.priority}
+                    </span>
+                  </td>
                   <td>
                     <span className={`badge ${incident.status}`}>{incident.status}</span>
                   </td>
@@ -218,6 +306,6 @@ export default async function IncidentsPage({
           </div>
         </div>
       </section>
-    </main>
+    </AppShell>
   );
 }

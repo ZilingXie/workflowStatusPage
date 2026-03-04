@@ -34,6 +34,13 @@ export async function GET(request: NextRequest, { params }: Params): Promise<Nex
 
   return NextResponse.json({
     success: true,
-    incident
+    incident: {
+      ...incident,
+      workflowURL: incident.workflowId,
+      executionID: incident.executionId,
+      executionURL: incident.executionUrl,
+      summary: incident.errorMessage,
+      description: incident.errorStack ?? ""
+    }
   });
 }

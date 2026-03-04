@@ -11,6 +11,7 @@ type Params = {
     id: string;
   };
 };
+const DEFAULT_OPEN_TO_IN_PROGRESS_REASON = "start working";
 
 export async function PATCH(request: NextRequest, { params }: Params): Promise<NextResponse> {
   const session = getSessionFromRequest(request);
@@ -63,7 +64,11 @@ export async function PATCH(request: NextRequest, { params }: Params): Promise<N
       ? parsed.data.resolutionReason
       : incident.status === IncidentStatus.RESOLVED && targetStatus === IncidentStatus.OPEN
         ? parsed.data.reopenReason
-        : parsed.data.actionReason;
+        : parsed.data.actionReason && parsed.data.actionReason.length > 0
+          ? parsed.data.actionReason
+          : incident.status === IncidentStatus.OPEN && targetStatus === IncidentStatus.IN_PROGRESS
+            ? DEFAULT_OPEN_TO_IN_PROGRESS_REASON
+            : undefined;
 
   const updateData: Prisma.IncidentUpdateInput = {
     status: targetStatus

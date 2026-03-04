@@ -3,9 +3,9 @@
 ## Project Snapshot
 - Project: n8n Failure Status Site (MVP)
 - Plan Source: `n8n-status-mvp-plan.md`
-- Current Phase: Phase 2 (n8n integration and idempotency validation)
+- Current Phase: Phase 3 (EC2 deployment via Docker Compose)
 - Overall Status: In Progress
-- Last Updated: 2026-03-02
+- Last Updated: 2026-03-03
 
 ## Success Criteria Tracker
 | ID | Success Criteria | Target | Current Status | Evidence/Link | Owner |
@@ -19,7 +19,7 @@
 | Phase | Scope | Target Date | Status | Notes |
 | --- | --- | --- | --- | --- |
 | Phase 1 | DB schema, core APIs, auth login/logout, incident list page | TBD | Completed | Runtime validation and manual self-tests passed |
-| Phase 2 | n8n Error Workflow integration + idempotency validation | TBD | Not Started | - |
+| Phase 2 | n8n Error Workflow integration + idempotency validation | TBD | Completed | Added integration guide + automated idempotency self-test (`npm run test:phase2`) |
 | Phase 3 | EC2 deployment via Docker Compose | TBD | Not Started | - |
 | Phase 4 | 1-week stabilization + data quality review | TBD | Not Started | - |
 
@@ -51,6 +51,7 @@
 - [x] `/login`
 - [x] `/incidents` list with filters, KPI cards, 15s polling
 - [x] `/incidents/:id` detail + timeline + transition actions
+- [x] `/incidents` supports inline priority edit (`L`, `M`, `H`)
 - [x] UTC time display across pages
 
 ### E. Data Layer
@@ -64,11 +65,16 @@
 - [ ] Env vars configured (`INGEST_TOKEN`, `APP_USERS_JSON`, `SESSION_SECRET`, `DATABASE_URL`, `TZ=UTC`)
 - [ ] Backup job (`pg_dump` daily) defined
 
+### G. Phase 2 Delivery
+- [x] n8n Error Workflow integration guide documented (`docs/phase-2-n8n-integration.md`)
+- [x] Automated idempotency self-test added (`scripts/phase2-idempotency-selftest.sh`)
+- [x] Duplicate ingest behavior validated end-to-end (HTTP + DB assertions)
+
 ## Test Progress Matrix
 | Test Area | Case | Status | Notes |
 | --- | --- | --- | --- |
-| Ingest | create | Passed | Manual self-test passed |
-| Ingest | duplicate update | Passed | Manual self-test passed (deduplicated=true) |
+| Ingest | create | Passed | Automated self-test (`npm run test:phase2`) verified HTTP 201 + incidentId returned |
+| Ingest | duplicate update | Passed | Automated self-test (`npm run test:phase2`) verified HTTP 200 + deduplicated=true + same incidentId |
 | Ingest | invalid token -> 401 | Passed | Manual self-test passed |
 | Ingest | missing required field -> 400 | Passed | Manual self-test passed |
 | Workflow | valid transitions | Passed | Manual self-test passed |
@@ -77,11 +83,20 @@
 | Workflow | admin can reopen | Passed | Manual self-test passed |
 | List | default sort newest first | Passed | Manual self-test passed |
 | List | filters + pagination (20/page) | Passed | Manual self-test passed |
+| List | inline priority edit (`L/M/H`) | Pending Run | UI + API implemented (`PATCH /api/v1/incidents/:id/priority`) |
 | Detail | execution URL correctness | Passed | Manual self-test passed |
 | Detail | timeline completeness | Passed | Manual self-test passed |
 | Export | admin allowed | Passed | Manual self-test passed |
 | Export | operator forbidden | Passed | Manual self-test passed |
 | SLA | ingest-to-visible <= 30s | Passed | Manual self-test passed (15s polling window) |
+
+## Phase 2 Test Cases
+| ID | Case | Expected Result | Status | Evidence |
+| --- | --- | --- | --- | --- |
+| P2-TC-01 | First ingest with new `(sourceInstance, executionId)` | `201`, `deduplicated=false` | Passed | `npm run test:phase2` |
+| P2-TC-02 | Duplicate ingest with same idempotency key | `200`, `deduplicated=true`, same `incidentId` | Passed | `npm run test:phase2` |
+| P2-TC-03 | DB uniqueness under duplicate ingest | Exactly one incident row for the key | Passed | `scripts/phase2-idempotency-db-check.cjs` |
+| P2-TC-04 | Raw payload audit persistence on duplicate ingest | At least 2 raw payload rows for same incident | Passed | `scripts/phase2-idempotency-db-check.cjs` |
 
 ## Phase Completion Rule
 - For every development phase, prepare phase-specific test cases before marking implementation complete.
@@ -91,7 +106,7 @@
 ## Risk & Issue Log
 | ID | Type | Description | Impact | Mitigation | Status | Owner |
 | --- | --- | --- | --- | --- | --- | --- |
-| R-001 | Risk | n8n payload variability can break validation | High | Version payload contract + schema tests | Open | - |
+| R-001 | Risk | n8n payload variability can break validation | High | Added integration mapping guide + keep schema contract/versioning tests | Monitoring | - |
 | R-002 | Risk | Session/auth misconfiguration in production | High | Add startup checks and env validation | Open | - |
 | R-003 | Risk | Slow queries when incidents grow | Medium | Add planned indexes and query profiling | Open | - |
 
@@ -101,3 +116,6 @@
 | 2026-03-02 | Initialized tracker from MVP plan | Codex |
 | 2026-03-02 | Phase 1 baseline scaffold implemented (schema, APIs, auth, UI); verification pending | Codex |
 | 2026-03-02 | Phase 1 runtime self-tests updated to Passed; Phase 1 marked Completed | Codex |
+| 2026-03-02 | Added Phase 2 n8n integration guide and automated idempotency self-test scripts | Codex |
+| 2026-03-02 | Phase 2 self-test passed; Phase 2 marked Completed and current phase advanced to Phase 3 | Codex |
+| 2026-03-03 | Added incident priority (`L/M/H`) with default `L` and inline edit on `/incidents` | Codex |

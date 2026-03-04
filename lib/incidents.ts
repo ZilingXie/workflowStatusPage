@@ -1,9 +1,10 @@
-import { IncidentStatus, Prisma, UserRole } from "@prisma/client";
+import { IncidentPriority, IncidentStatus, Prisma, UserRole } from "@prisma/client";
 
 export const DEFAULT_PAGE_SIZE = 20;
 
 export type IncidentFilters = {
   status?: IncidentStatus;
+  priority?: IncidentPriority;
   workflow?: string;
   from?: Date;
   to?: Date;
@@ -17,11 +18,18 @@ const ALLOWED_STATUSES = new Set<IncidentStatus>([
   IncidentStatus.RESOLVED
 ]);
 
+const ALLOWED_PRIORITIES = new Set<IncidentPriority>([
+  IncidentPriority.L,
+  IncidentPriority.M,
+  IncidentPriority.H
+]);
+
 export function parseIncidentFilters(params: URLSearchParams): IncidentFilters {
   const pageValue = Number(params.get("page") ?? "1");
   const pageSizeValue = Number(params.get("pageSize") ?? `${DEFAULT_PAGE_SIZE}`);
 
   const statusParam = params.get("status") ?? undefined;
+  const priorityParam = params.get("priority") ?? undefined;
   const workflowParam = params.get("workflow")?.trim();
   const fromParam = params.get("from") ?? undefined;
   const toParam = params.get("to") ?? undefined;
@@ -30,12 +38,17 @@ export function parseIncidentFilters(params: URLSearchParams): IncidentFilters {
     statusParam && ALLOWED_STATUSES.has(statusParam as IncidentStatus)
       ? (statusParam as IncidentStatus)
       : undefined;
+  const priority =
+    priorityParam && ALLOWED_PRIORITIES.has(priorityParam as IncidentPriority)
+      ? (priorityParam as IncidentPriority)
+      : undefined;
 
   const from = fromParam ? new Date(fromParam) : undefined;
   const to = toParam ? new Date(toParam) : undefined;
 
   return {
     status,
+    priority,
     workflow: workflowParam || undefined,
     from: from && !Number.isNaN(from.getTime()) ? from : undefined,
     to: to && !Number.isNaN(to.getTime()) ? to : undefined,
@@ -52,6 +65,10 @@ export function buildIncidentWhere(filters: IncidentFilters): Prisma.IncidentWhe
 
   if (filters.status) {
     where.status = filters.status;
+  }
+
+  if (filters.priority) {
+    where.priority = filters.priority;
   }
 
   if (filters.workflow) {

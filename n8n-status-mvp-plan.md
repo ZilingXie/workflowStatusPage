@@ -66,29 +66,25 @@
 ```json
 {
   "sourceInstance": "ec2-prod-01",
-  "workflowId": "123",
   "workflowName": "Daily Sync",
-  "executionId": "456",
-  "failedAt": "2026-02-28T01:23:45.000Z",
-  "errorMessage": "Request failed with status code 500",
-  "errorNodeName": "HTTP Request",
-  "errorType": "NodeApiError",
-  "errorStack": "optional string",
-  "n8nBaseUrl": "https://n8n.example.com"
+  "workflowURL": "https://n8n.example.com/workflow/123",
+  "executionID": "456",
+  "executionURL": "https://n8n.example.com/execution/456",
+  "summary": "Request failed with status code 500",
+  "description": "optional detail text",
+  "time": "2026-03-03T02:42"
 }
 ```
 
 ### Required fields
 - `sourceInstance`
-- `workflowId`
 - `workflowName`
-- `executionId`
-- `failedAt`
-- `errorMessage`
-- `n8nBaseUrl`
-
-### Derived field
-- `execution_url = n8nBaseUrl + "/execution/" + executionId`
+- `workflowURL`
+- `executionID`
+- `executionURL`
+- `summary`
+- `description`
+- `time`
 
 ### Raw payload
 - Store full payload JSON for audit and future extension.
@@ -106,6 +102,7 @@
 - `error_type` (text, null)
 - `error_stack` (text, null)
 - `execution_url` (text, not null)
+- `priority` (enum: L, M, H; default L)
 - `status` (enum: OPEN, IN_PROGRESS, RESOLVED; default OPEN)
 - `resolution_reason` (text, null)
 - `resolved_by` (text, null)
@@ -137,13 +134,14 @@
 ### `/incidents`
 - KPI cards: `OPEN`, `IN_PROGRESS`, `RESOLVED`
 - Filters: status, workflow, time range
-- Columns: failed time (UTC), workflow, execution id, error summary, status, handler, actions
+- Columns: failed time (UTC), workflow (clickable workflowURL), execution id (clickable executionURL), summary, priority, status, handler, actions
 - Default sort: newest failure first
 - Auto-refresh: every 15 seconds
 
 ### `/incidents/:id`
-- Workflow/execution/error summary
-- One-click open in n8n execution page
+- Show summary + description
+- Workflow name links to workflowURL
+- Execution ID links to executionURL
 - Status transition actions with required reason on resolve
 - Timeline of all status changes
 

@@ -1,6 +1,6 @@
 # n8n Failure Status Site
 
-Phase 1 implementation baseline using Next.js + TypeScript + Prisma/PostgreSQL.
+MVP implementation using Next.js + TypeScript + Prisma/PostgreSQL.
 
 ## Local Run
 
@@ -30,7 +30,16 @@ Phase 1 implementation baseline using Next.js + TypeScript + Prisma/PostgreSQL.
 - `GET /api/v1/incidents`
 - `GET /api/v1/incidents/:id`
 - `PATCH /api/v1/incidents/:id/status`
+- `PATCH /api/v1/incidents/:id/priority`
 - `GET /api/v1/incidents/export.csv`
+
+## Phase 2 Integration
+
+- n8n Error Workflow integration guide: `docs/phase-2-n8n-integration.md`
+- Phase 2 idempotency self-test:
+  ```bash
+  npm run test:phase2
+  ```
 
 ## Notes
 

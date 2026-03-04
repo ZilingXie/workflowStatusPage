@@ -31,6 +31,7 @@ export function LoginForm(): JSX.Element {
 
       if (!response.ok) {
         setError("Invalid username or password");
+        setLoading(false);
         return;
       }
 
@@ -38,7 +39,6 @@ export function LoginForm(): JSX.Element {
       router.refresh();
     } catch {
       setError("Login failed. Please retry.");
-    } finally {
       setLoading(false);
     }
   }
@@ -55,6 +55,7 @@ export function LoginForm(): JSX.Element {
           onChange={(event) => setState((prev) => ({ ...prev, username: event.target.value }))}
           name="username"
           autoComplete="username"
+          disabled={loading}
           required
         />
       </label>
@@ -67,6 +68,7 @@ export function LoginForm(): JSX.Element {
           name="password"
           type="password"
           autoComplete="current-password"
+          disabled={loading}
           required
         />
       </label>
@@ -74,7 +76,14 @@ export function LoginForm(): JSX.Element {
       {error ? <p style={{ color: "#b42318" }}>{error}</p> : null}
 
       <button type="submit" disabled={loading}>
-        {loading ? "Signing in..." : "Sign in"}
+        {loading ? (
+          <span className="button-loading">
+            <span className="button-spinner" aria-hidden />
+            <span>Signing in...</span>
+          </span>
+        ) : (
+          "Sign in"
+        )}
       </button>
     </form>
   );

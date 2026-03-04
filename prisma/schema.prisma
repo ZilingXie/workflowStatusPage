@@ -13,6 +13,12 @@ enum IncidentStatus {
   RESOLVED
 }
 
+enum IncidentPriority {
+  L
+  M
+  H
+}
+
 enum UserRole {
   ADMIN
   OPERATOR
@@ -30,6 +36,7 @@ model Incident {
   errorType        String?           @map("error_type")
   errorStack       String?           @map("error_stack")
   executionUrl     String            @map("execution_url")
+  priority         IncidentPriority  @default(L)
   status           IncidentStatus    @default(OPEN)
   resolutionReason String?           @map("resolution_reason")
   resolvedBy       String?           @map("resolved_by")
@@ -41,6 +48,7 @@ model Incident {
 
   @@unique([sourceInstance, executionId])
   @@index([status])
+  @@index([priority])
   @@index([failedAt(sort: Desc)])
   @@index([workflowName])
   @@index([failedAt, status])
