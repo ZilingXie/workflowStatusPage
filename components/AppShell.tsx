@@ -1,8 +1,10 @@
+import Link from "next/link";
 import { LogoutButton } from "@/components/LogoutButton";
 import { ServerSession } from "@/lib/auth/server";
 
 type Props = {
   session: ServerSession;
+  activeNav?: "incidents" | "workflow-requests";
   title: string;
   subtitle?: string;
   topRightActions?: React.ReactNode;
@@ -15,6 +17,7 @@ function initials(name: string): string {
 
 export function AppShell({
   session,
+  activeNav,
   title,
   subtitle,
   topRightActions,
@@ -24,9 +27,25 @@ export function AppShell({
     <div className="dashboard-wrap">
       <section className="dashboard-main">
         <header className="topbar">
-          <div className="stack" style={{ gap: 4 }}>
+          <div className="stack" style={{ gap: 8 }}>
             <h1>{title}</h1>
             {subtitle ? <p className="muted">{subtitle}</p> : null}
+            <nav className="topbar-nav">
+              <Link
+                href="/incidents"
+                className={activeNav === "incidents" ? "topbar-nav-link active" : "topbar-nav-link"}
+              >
+                Incidents
+              </Link>
+              <Link
+                href="/workflow-requests"
+                className={
+                  activeNav === "workflow-requests" ? "topbar-nav-link active" : "topbar-nav-link"
+                }
+              >
+                Workflow Requests
+              </Link>
+            </nav>
           </div>
 
           <div className="topbar-right">

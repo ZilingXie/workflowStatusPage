@@ -72,3 +72,7 @@ export function findUserByUsername(username: string): ConfiguredUser | undefined
   const normalized = username.trim().toLowerCase();
   return getConfiguredUsers().find((user) => user.username.toLowerCase() === normalized);
 }
+
+export function getConfiguredUsernames(): string[] {
+  return getConfiguredUsers().map((user) => user.username);
+}
