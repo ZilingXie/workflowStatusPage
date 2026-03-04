@@ -140,6 +140,7 @@ export default async function IncidentsPage({
   return (
     <AppShell
       session={session}
+      activeNav="incidents"
       title="Incidents"
       subtitle="Track failed workflows and response lifecycle"
       topRightActions={

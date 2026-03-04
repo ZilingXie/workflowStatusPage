@@ -1,4 +1,9 @@
-import { IncidentPriority, IncidentStatus } from "@prisma/client";
+import {
+  IncidentPriority,
+  IncidentStatus,
+  WorkflowRequestStatus,
+  WorkflowRequestType
+} from "@prisma/client";
 import { z } from "zod";
 
 export const loginSchema = z.object({
@@ -34,4 +39,104 @@ export const statusUpdateSchema = z.object({
 
 export const priorityUpdateSchema = z.object({
   priority: z.nativeEnum(IncidentPriority)
+});
+
+export const workflowRequestCreateSchema = z
+  .object({
+    type: z.nativeEnum(WorkflowRequestType),
+    title: z.string().trim().min(1).max(200),
+    description: z.string().trim().min(1).max(8000),
+    workflowName: z.string().trim().max(200).optional(),
+    workflowReference: z.string().trim().max(2000).optional(),
+    requestedWorkflowName: z.string().trim().max(200).optional(),
+    businessGoal: z.string().trim().max(2000).optional(),
+    expectedTrigger: z.string().trim().max(2000).optional(),
+    priority: z.nativeEnum(IncidentPriority).optional(),
+    sourceIncidentId: z.string().uuid().optional(),
+    assigneeUsername: z.string().trim().min(1).max(100).optional()
+  })
+  .superRefine((value, context) => {
+    if (value.type === WorkflowRequestType.IMPROVEMENT && !value.workflowName?.trim()) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["workflowName"],
+        message: "workflowName is required for IMPROVEMENT"
+      });
+    }
+
+    if (value.type === WorkflowRequestType.NEW_WORKFLOW) {
+      if (!value.requestedWorkflowName?.trim()) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["requestedWorkflowName"],
+          message: "requestedWorkflowName is required for NEW_WORKFLOW"
+        });
+      }
+
+      if (!value.businessGoal?.trim()) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["businessGoal"],
+          message: "businessGoal is required for NEW_WORKFLOW"
+        });
+      }
+
+      if (!value.expectedTrigger?.trim()) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["expectedTrigger"],
+          message: "expectedTrigger is required for NEW_WORKFLOW"
+        });
+      }
+    }
+  });
+
+export const workflowRequestUpdateSchema = z
+  .object({
+    title: z.string().trim().min(1).max(200).optional(),
+    description: z.string().trim().min(1).max(8000).optional(),
+    workflowName: z.string().trim().max(200).nullable().optional(),
+    workflowReference: z.string().trim().max(2000).nullable().optional(),
+    requestedWorkflowName: z.string().trim().max(200).nullable().optional(),
+    businessGoal: z.string().trim().max(2000).nullable().optional(),
+    expectedTrigger: z.string().trim().max(2000).nullable().optional(),
+    priority: z.nativeEnum(IncidentPriority).optional(),
+    updateReason: z.string().trim().max(2000).optional()
+  })
+  .superRefine((value, context) => {
+    const keys: Array<keyof Omit<typeof value, "updateReason">> = [
+      "title",
+      "description",
+      "workflowName",
+      "workflowReference",
+      "requestedWorkflowName",
+      "businessGoal",
+      "expectedTrigger",
+      "priority"
+    ];
+
+    const hasMutatingField = keys.some((key) => value[key] !== undefined);
+    if (!hasMutatingField) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "At least one updatable field is required"
+      });
+    }
+  });
+
+export const workflowRequestStatusUpdateSchema = z.object({
+  toStatus: z.nativeEnum(WorkflowRequestStatus),
+  actionReason: z.string().trim().min(1).max(2000).optional()
+});
+
+export const workflowRequestAssigneeUpdateSchema = z.object({
+  assigneeUsername: z.string().trim().min(1).max(100).nullable()
+});
+
+export const workflowRequestCommentCreateSchema = z.object({
+  content: z.string().trim().min(1).max(4000)
+});
+
+export const workflowRequestCommentUpdateSchema = z.object({
+  content: z.string().trim().min(1).max(4000)
 });

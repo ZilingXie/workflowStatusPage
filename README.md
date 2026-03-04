@@ -32,6 +32,19 @@ MVP implementation using Next.js + TypeScript + Prisma/PostgreSQL.
 - `PATCH /api/v1/incidents/:id/status`
 - `PATCH /api/v1/incidents/:id/priority`
 - `GET /api/v1/incidents/export.csv`
+- `POST /api/v1/workflow-requests`
+- `GET /api/v1/workflow-requests`
+- `GET /api/v1/workflow-requests/:id`
+- `PATCH /api/v1/workflow-requests/:id`
+- `PATCH /api/v1/workflow-requests/:id/status`
+- `PATCH /api/v1/workflow-requests/:id/assignee`
+- `POST /api/v1/workflow-requests/:id/comments`
+- `PATCH /api/v1/workflow-requests/:id/comments/:commentId`
+- `DELETE /api/v1/workflow-requests/:id/comments/:commentId`
+- `GET /api/v1/workflow-requests/export.csv`
+- `/workflow-requests`
+- `/workflow-requests/new`
+- `/workflow-requests/:id`
 
 ## Phase 2 Integration
 
@@ -44,5 +57,6 @@ MVP implementation using Next.js + TypeScript + Prisma/PostgreSQL.
 ## Notes
 
 - Incident list auto-refreshes every 15 seconds.
+- Workflow request list does not auto-refresh (manual refresh by design).
 - All timestamps are displayed in UTC (`toISOString`).
 - Session cookie TTL is 8 hours.

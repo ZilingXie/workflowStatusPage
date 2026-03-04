@@ -145,6 +145,38 @@ main {
   font-size: 11px;
 }
 
+.topbar-nav {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.topbar-nav-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid #c6ddf6;
+  background: #f5faff;
+  color: #1f537a;
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.topbar-nav-link:hover {
+  text-decoration: none;
+  background: #ebf5ff;
+}
+
+.topbar-nav-link.active {
+  border-color: #7fb9ef;
+  background: #dff0ff;
+  color: #114468;
+  font-weight: 700;
+}
+
 .dashboard-content {
   max-width: none;
   margin: 0;
@@ -175,6 +207,10 @@ p {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
+}
+
+.workflow-request-kpi-grid {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
 }
 
 .form-row {
@@ -562,6 +598,31 @@ td {
   color: var(--success);
 }
 
+.badge.PROPOSED {
+  background: #e6f4ff;
+  color: #0f5f96;
+}
+
+.badge.TRIAGED {
+  background: #fff3da;
+  color: #9a5410;
+}
+
+.badge.PLANNED {
+  background: #edf5ff;
+  color: #295f9b;
+}
+
+.badge.DONE {
+  background: #e8faef;
+  color: var(--success);
+}
+
+.badge.REJECTED {
+  background: #ffe9e6;
+  color: var(--danger);
+}
+
 .payload-fold {
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -634,6 +695,20 @@ td {
   flex-wrap: wrap;
 }
 
+.comment-item {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  background: #fcfeff;
+}
+
+.comment-item-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
 @media (max-width: 880px) {
   .dashboard-wrap {
     padding: 12px;
@@ -652,6 +727,10 @@ td {
   }
 
   .kpi-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .workflow-request-kpi-grid {
     grid-template-columns: 1fr;
   }
 

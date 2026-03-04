@@ -5,7 +5,7 @@
 - Plan Source: `n8n-status-mvp-plan.md`
 - Current Phase: Phase 3 (EC2 deployment via Docker Compose)
 - Overall Status: In Progress
-- Last Updated: 2026-03-03
+- Last Updated: 2026-03-04
 
 ## Success Criteria Tracker
 | ID | Success Criteria | Target | Current Status | Evidence/Link | Owner |
@@ -20,6 +20,7 @@
 | --- | --- | --- | --- | --- |
 | Phase 1 | DB schema, core APIs, auth login/logout, incident list page | TBD | Completed | Runtime validation and manual self-tests passed |
 | Phase 2 | n8n Error Workflow integration + idempotency validation | TBD | Completed | Added integration guide + automated idempotency self-test (`npm run test:phase2`) |
+| Phase 2.5 | Workflow Improvement Request module (`/workflow-requests`) | TBD | In Progress | Schema/APIs/pages/role guards implemented and migration applied; runtime API self-test pending |
 | Phase 3 | EC2 deployment via Docker Compose | TBD | Not Started | - |
 | Phase 4 | 1-week stabilization + data quality review | TBD | Not Started | - |
 
@@ -70,6 +71,16 @@
 - [x] Automated idempotency self-test added (`scripts/phase2-idempotency-selftest.sh`)
 - [x] Duplicate ingest behavior validated end-to-end (HTTP + DB assertions)
 
+### H. Workflow Improvement Request Module
+- [x] Prisma schema + migration for `workflow_requests` / `workflow_request_events` / `workflow_request_comments`
+- [x] API set implemented under `/api/v1/workflow-requests*`
+- [x] Role and transition guards implemented (`ADMIN` governance for status/assignee)
+- [x] UI pages added (`/workflow-requests`, `/workflow-requests/new`, `/workflow-requests/:id`)
+- [x] Incident detail quick-create link to workflow request create page
+- [x] Comment create/edit/delete behavior implemented (author edit, admin delete)
+- [x] CSV export for workflow requests (ADMIN only)
+- [ ] Runtime API self-test executed and documented
+
 ## Test Progress Matrix
 | Test Area | Case | Status | Notes |
 | --- | --- | --- | --- |
@@ -89,6 +100,8 @@
 | Export | admin allowed | Passed | Manual self-test passed |
 | Export | operator forbidden | Passed | Manual self-test passed |
 | SLA | ingest-to-visible <= 30s | Passed | Manual self-test passed (15s polling window) |
+| Workflow Request | API compile/type/lint baseline | Passed | `npm run lint`, `npm run build`, `npm run db:migrate` passed on 2026-03-04 |
+| Workflow Request | create/list/detail/status/comment/export runtime behaviors | Pending Run | Implementation completed; manual/automated API runtime check pending |
 
 ## Phase 2 Test Cases
 | ID | Case | Expected Result | Status | Evidence |
@@ -109,6 +122,7 @@
 | R-001 | Risk | n8n payload variability can break validation | High | Added integration mapping guide + keep schema contract/versioning tests | Monitoring | - |
 | R-002 | Risk | Session/auth misconfiguration in production | High | Add startup checks and env validation | Open | - |
 | R-003 | Risk | Slow queries when incidents grow | Medium | Add planned indexes and query profiling | Open | - |
+| R-004 | Risk | New workflow-request APIs may have permission edge cases | Medium | Add dedicated API self-test for operator/admin negative/positive cases | Open | - |
 
 ## Change Log
 | Date | Update | By |
@@ -119,3 +133,4 @@
 | 2026-03-02 | Added Phase 2 n8n integration guide and automated idempotency self-test scripts | Codex |
 | 2026-03-02 | Phase 2 self-test passed; Phase 2 marked Completed and current phase advanced to Phase 3 | Codex |
 | 2026-03-03 | Added incident priority (`L/M/H`) with default `L` and inline edit on `/incidents` | Codex |
+| 2026-03-04 | Added Workflow Improvement Request module (schema, APIs, UI pages, incident quick-create, docs) and passed lint/build baseline | Codex |

@@ -24,6 +24,27 @@ enum UserRole {
   OPERATOR
 }
 
+enum WorkflowRequestType {
+  IMPROVEMENT
+  NEW_WORKFLOW
+}
+
+enum WorkflowRequestStatus {
+  PROPOSED
+  TRIAGED
+  PLANNED
+  IN_PROGRESS
+  DONE
+  REJECTED
+}
+
+enum WorkflowRequestEventType {
+  CREATED
+  UPDATED
+  STATUS_CHANGED
+  ASSIGNEE_CHANGED
+}
+
 model Incident {
   id               String            @id @default(uuid()) @db.Uuid
   sourceInstance   String            @map("source_instance")
@@ -45,6 +66,7 @@ model Incident {
   updatedAt        DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
   events           IncidentEvent[]
   rawPayloads      IncidentRawPayload[]
+  workflowRequests WorkflowRequest[]
 
   @@unique([sourceInstance, executionId])
   @@index([status])
@@ -79,4 +101,67 @@ model IncidentRawPayload {
 
   @@index([incidentId])
   @@map("incident_raw_payloads")
+}
+
+model WorkflowRequest {
+  id                    String                 @id @default(uuid()) @db.Uuid
+  type                  WorkflowRequestType
+  title                 String
+  description           String
+  workflowName          String?                @map("workflow_name")
+  workflowReference     String?                @map("workflow_reference")
+  requestedWorkflowName String?                @map("requested_workflow_name")
+  businessGoal          String?                @map("business_goal")
+  expectedTrigger       String?                @map("expected_trigger")
+  priority              IncidentPriority       @default(L)
+  status                WorkflowRequestStatus  @default(PROPOSED)
+  proposedBy            String                 @map("proposed_by")
+  assigneeUsername      String?                @map("assignee_username")
+  sourceIncidentId      String?                @map("source_incident_id") @db.Uuid
+  createdAt             DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime               @updatedAt @map("updated_at") @db.Timestamptz(6)
+  sourceIncident        Incident?              @relation(fields: [sourceIncidentId], references: [id], onDelete: SetNull)
+  events                WorkflowRequestEvent[]
+  comments              WorkflowRequestComment[]
+
+  @@index([status])
+  @@index([type])
+  @@index([priority])
+  @@index([workflowName])
+  @@index([assigneeUsername])
+  @@index([createdAt(sort: Desc)])
+  @@index([sourceIncidentId])
+  @@map("workflow_requests")
+}
+
+model WorkflowRequestEvent {
+  id            String                 @id @default(uuid()) @db.Uuid
+  requestId     String                 @map("request_id") @db.Uuid
+  eventType     WorkflowRequestEventType @map("event_type")
+  fromStatus    WorkflowRequestStatus? @map("from_status")
+  toStatus      WorkflowRequestStatus? @map("to_status")
+  fromAssignee  String?                @map("from_assignee")
+  toAssignee    String?                @map("to_assignee")
+  actionReason  String?                @map("action_reason")
+  actorUsername String                 @map("actor_username")
+  actorRole     UserRole               @map("actor_role")
+  createdAt     DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  request       WorkflowRequest        @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@index([requestId])
+  @@map("workflow_request_events")
+}
+
+model WorkflowRequestComment {
+  id             String          @id @default(uuid()) @db.Uuid
+  requestId      String          @map("request_id") @db.Uuid
+  authorUsername String          @map("author_username")
+  authorRole     UserRole        @map("author_role")
+  content        String
+  createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+  request        WorkflowRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@index([requestId])
+  @@map("workflow_request_comments")
 }

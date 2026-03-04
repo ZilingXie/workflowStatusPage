@@ -42,13 +42,28 @@ export default async function IncidentDetailPage({ params }: Params): Promise<JS
     incident.workflowId.startsWith("http://") || incident.workflowId.startsWith("https://")
       ? incident.workflowId
       : null;
+  const quickCreateParams = new URLSearchParams({
+    type: "IMPROVEMENT",
+    sourceIncidentId: incident.id,
+    workflowName: incident.workflowName,
+    workflowReference: incident.workflowId,
+    title: `Improve ${incident.workflowName}`,
+    description: `Triggered from incident ${incident.id}. Related failure summary: ${incident.errorMessage}`
+  });
+  const quickCreateHref = `/workflow-requests/new?${quickCreateParams.toString()}`;
 
   return (
     <AppShell
       session={session}
+      activeNav="incidents"
       title="Incident Detail"
       subtitle={`Incident ID: ${incident.id}`}
-      topRightActions={<Link href="/incidents">Back to list</Link>}
+      topRightActions={
+        <>
+          <Link href={quickCreateHref}>Create Improvement Request</Link>
+          <Link href="/incidents">Back to list</Link>
+        </>
+      }
     >
       <section className="card stack">
         <table>
