@@ -56,13 +56,13 @@ export function UtcDateTimeFilterInput({
   }, [initialValue]);
 
   return (
-    <div className="datetime-filter">
+    <div>
       <input type="hidden" name={name} value={isoValue} />
       <input
         type="datetime-local"
         value={displayValue}
         step={1}
-        className="datetime-filter-input"
+        className="utc-datetime-input h-9 rounded-md border border-input bg-input/50 px-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
         onChange={(event) => {
           const nextDisplay = event.target.value;
           const nextIso = toIsoUtcValue(nextDisplay);
@@ -76,7 +76,6 @@ export function UtcDateTimeFilterInput({
             }
           }
         }}
-        placeholder="YYYY-MM-DD hh:mm:ss"
       />
     </div>
   );

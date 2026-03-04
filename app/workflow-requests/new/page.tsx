@@ -1,3 +1,4 @@
+import { ArrowLeft } from "lucide-react";
 import { UserRole, WorkflowRequestType } from "@prisma/client";
 import Link from "next/link";
 import { AppShell } from "@/components/AppShell";
@@ -49,8 +50,7 @@ export default async function NewWorkflowRequestPage({
   const initialType = normalizeType(asString(searchParams.type));
   const assigneeOptions = getConfiguredUsernames();
   const initialWorkflowName = asString(searchParams.workflowName) ?? incident?.workflowName ?? "";
-  const initialWorkflowReference =
-    asString(searchParams.workflowReference) ?? incident?.workflowId ?? "";
+  const initialWorkflowReference = asString(searchParams.workflowReference) ?? incident?.workflowId ?? "";
 
   const initialTitle =
     asString(searchParams.title) ??
@@ -65,36 +65,44 @@ export default async function NewWorkflowRequestPage({
       : "");
 
   return (
-    <AppShell
-      session={session}
-      activeNav="workflow-requests"
-      title="New Workflow Request"
-      subtitle="Create improvement request or new workflow demand"
-      topRightActions={<Link href="/workflow-requests">Back to list</Link>}
-    >
-      {sourceIncidentId && !incident ? (
-        <section className="card stack">
-          <h3>Linked Incident</h3>
-          <p className="muted">
-            <code>sourceIncidentId={sourceIncidentId}</code> was provided but no incident is found.
-            You can still create a request without linkage.
-          </p>
-        </section>
-      ) : null}
+    <AppShell session={session} activeNav="workflow-requests">
+      <div className="flex flex-col gap-6">
+        <Link
+          href="/workflow-requests"
+          className="flex w-fit items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Workflow Requests
+        </Link>
 
-      <WorkflowRequestCreateForm
-        initialType={initialType}
-        initialTitle={initialTitle}
-        initialDescription={initialDescription}
-        initialWorkflowName={initialWorkflowName}
-        initialWorkflowReference={initialWorkflowReference}
-        initialRequestedWorkflowName={asString(searchParams.requestedWorkflowName)}
-        initialBusinessGoal={asString(searchParams.businessGoal)}
-        initialExpectedTrigger={asString(searchParams.expectedTrigger)}
-        sourceIncidentId={incident?.id}
-        isAdmin={session.role === UserRole.ADMIN}
-        assigneeOptions={assigneeOptions}
-      />
+        <div>
+          <h1 className="text-xl font-semibold text-foreground">New Workflow Request</h1>
+          <p className="text-sm text-muted-foreground">Submit a new improvement request or workflow proposal</p>
+        </div>
+
+        {sourceIncidentId && !incident ? (
+          <section className="max-w-2xl rounded-lg border border-border bg-card p-4">
+            <h3 className="text-sm font-semibold text-foreground">Linked Incident</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              <code>sourceIncidentId={sourceIncidentId}</code> was provided but no incident is found.
+            </p>
+          </section>
+        ) : null}
+
+        <WorkflowRequestCreateForm
+          initialType={initialType}
+          initialTitle={initialTitle}
+          initialDescription={initialDescription}
+          initialWorkflowName={initialWorkflowName}
+          initialWorkflowReference={initialWorkflowReference}
+          initialRequestedWorkflowName={asString(searchParams.requestedWorkflowName)}
+          initialBusinessGoal={asString(searchParams.businessGoal)}
+          initialExpectedTrigger={asString(searchParams.expectedTrigger)}
+          sourceIncidentId={incident?.id}
+          isAdmin={session.role === UserRole.ADMIN}
+          assigneeOptions={assigneeOptions}
+        />
+      </div>
     </AppShell>
   );
 }

@@ -105,11 +105,9 @@ export function WorkflowRequestEditForm({
 
   if (!canEdit) {
     return (
-      <section className="card stack">
-        <h3>Edit Base Fields</h3>
-        <p className="muted">
-          Editable by ADMIN, or by proposer when status is PROPOSED.
-        </p>
+      <section className="rounded-lg border border-border bg-card p-6">
+        <h3 className="text-sm font-semibold text-foreground">Edit Base Fields</h3>
+        <p className="mt-2 text-sm text-muted-foreground">Editable by ADMIN, or by proposer when status is PROPOSED.</p>
       </section>
     );
   }
@@ -118,131 +116,134 @@ export function WorkflowRequestEditForm({
   const isNewWorkflow = type === WorkflowRequestType.NEW_WORKFLOW;
 
   return (
-    <section className="card stack">
-      <h3>Edit Base Fields</h3>
-      <form className="stack" onSubmit={onSubmit}>
-        <label className="stack" style={{ gap: 4 }}>
-          <span>Title</span>
+    <section className="rounded-lg border border-border bg-card p-6">
+      <h3 className="text-sm font-semibold text-foreground">Edit Base Fields</h3>
+      <form className="mt-4 flex flex-col gap-3" onSubmit={onSubmit}>
+        <FormField label="Title">
           <input
             value={state.title}
             onChange={(event) => setState((prev) => ({ ...prev, title: event.target.value }))}
             required
             disabled={loading}
+            className="h-10 rounded-md border border-input bg-input/50 px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           />
-        </label>
+        </FormField>
 
-        <label className="stack" style={{ gap: 4 }}>
-          <span>Description</span>
+        <FormField label="Description">
           <textarea
             value={state.description}
-            onChange={(event) =>
-              setState((prev) => ({ ...prev, description: event.target.value }))
-            }
+            onChange={(event) => setState((prev) => ({ ...prev, description: event.target.value }))}
             required
             disabled={loading}
+            className="rounded-md border border-input bg-input/50 p-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           />
-        </label>
+        </FormField>
 
         {isImprovement ? (
           <>
-            <label className="stack" style={{ gap: 4 }}>
-              <span>Workflow Name</span>
+            <FormField label="Workflow Name">
               <input
                 value={state.workflowName}
-                onChange={(event) =>
-                  setState((prev) => ({ ...prev, workflowName: event.target.value }))
-                }
+                onChange={(event) => setState((prev) => ({ ...prev, workflowName: event.target.value }))}
                 required
                 disabled={loading}
+                className="h-10 rounded-md border border-input bg-input/50 px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               />
-            </label>
+            </FormField>
 
-            <label className="stack" style={{ gap: 4 }}>
-              <span>Workflow Reference</span>
+            <FormField label="Workflow Reference">
               <input
                 value={state.workflowReference}
-                onChange={(event) =>
-                  setState((prev) => ({ ...prev, workflowReference: event.target.value }))
-                }
+                onChange={(event) => setState((prev) => ({ ...prev, workflowReference: event.target.value }))}
                 disabled={loading}
+                className="h-10 rounded-md border border-input bg-input/50 px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               />
-            </label>
+            </FormField>
           </>
         ) : null}
 
         {isNewWorkflow ? (
           <>
-            <label className="stack" style={{ gap: 4 }}>
-              <span>Requested Workflow Name</span>
+            <FormField label="Requested Workflow Name">
               <input
                 value={state.requestedWorkflowName}
-                onChange={(event) =>
-                  setState((prev) => ({ ...prev, requestedWorkflowName: event.target.value }))
-                }
+                onChange={(event) => setState((prev) => ({ ...prev, requestedWorkflowName: event.target.value }))}
                 required
                 disabled={loading}
+                className="h-10 rounded-md border border-input bg-input/50 px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               />
-            </label>
+            </FormField>
 
-            <label className="stack" style={{ gap: 4 }}>
-              <span>Business Goal</span>
+            <FormField label="Business Goal">
               <textarea
                 value={state.businessGoal}
-                onChange={(event) =>
-                  setState((prev) => ({ ...prev, businessGoal: event.target.value }))
-                }
+                onChange={(event) => setState((prev) => ({ ...prev, businessGoal: event.target.value }))}
                 required
                 disabled={loading}
+                className="rounded-md border border-input bg-input/50 p-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               />
-            </label>
+            </FormField>
 
-            <label className="stack" style={{ gap: 4 }}>
-              <span>Expected Trigger</span>
+            <FormField label="Expected Trigger">
               <textarea
                 value={state.expectedTrigger}
-                onChange={(event) =>
-                  setState((prev) => ({ ...prev, expectedTrigger: event.target.value }))
-                }
+                onChange={(event) => setState((prev) => ({ ...prev, expectedTrigger: event.target.value }))}
                 required
                 disabled={loading}
+                className="rounded-md border border-input bg-input/50 p-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               />
-            </label>
+            </FormField>
           </>
         ) : null}
 
-        <label className="stack" style={{ gap: 4 }}>
-          <span>Priority</span>
+        <FormField label="Priority">
           <select
             value={state.priority}
-            onChange={(event) =>
-              setState((prev) => ({ ...prev, priority: event.target.value as IncidentPriority }))
-            }
+            onChange={(event) => setState((prev) => ({ ...prev, priority: event.target.value as IncidentPriority }))}
             disabled={loading}
+            className="h-10 rounded-md border border-input bg-input/50 px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           >
             <option value={IncidentPriority.L}>L</option>
             <option value={IncidentPriority.M}>M</option>
             <option value={IncidentPriority.H}>H</option>
           </select>
-        </label>
+        </FormField>
 
-        <label className="stack" style={{ gap: 4 }}>
-          <span>Update reason (optional)</span>
+        <FormField label="Update reason (optional)">
           <textarea
             value={state.updateReason}
-            onChange={(event) =>
-              setState((prev) => ({ ...prev, updateReason: event.target.value }))
-            }
+            onChange={(event) => setState((prev) => ({ ...prev, updateReason: event.target.value }))}
             placeholder="Why this update is made"
             disabled={loading}
+            className="rounded-md border border-input bg-input/50 p-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           />
-        </label>
+        </FormField>
 
-        {error ? <p style={{ color: "#b42318" }}>{error}</p> : null}
+        {error ? <p className="text-sm text-destructive">{error}</p> : null}
 
-        <button type="submit" disabled={loading}>
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-fit rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+        >
           {loading ? "Saving..." : "Save Changes"}
         </button>
       </form>
     </section>
+  );
+}
+
+function FormField({
+  label,
+  children
+}: {
+  label: string;
+  children: React.ReactNode;
+}): JSX.Element {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label className="text-xs text-muted-foreground">{label}</label>
+      {children}
+    </div>
   );
 }

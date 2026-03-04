@@ -1,10 +1,15 @@
 import { IncidentPriority, WorkflowRequestStatus, WorkflowRequestType } from "@prisma/client";
+import { Download, ExternalLink, Plus } from "lucide-react";
 import Link from "next/link";
 import { AppShell } from "@/components/AppShell";
+import { PriorityBadge } from "@/components/PriorityBadge";
+import { StatusBadge } from "@/components/StatusBadge";
 import { UtcDateTimeFilterInput } from "@/components/UtcDateTimeFilterInput";
 import { WorkflowFilterSelect } from "@/components/WorkflowFilterSelect";
 import { requireServerSession } from "@/lib/auth/server";
 import { prisma } from "@/lib/db";
+import { TYPE_COLOR_MAP } from "@/lib/ui";
+import { cn } from "@/lib/utils";
 import {
   buildWorkflowRequestWhere,
   parseWorkflowRequestFilters
@@ -69,6 +74,10 @@ function displayWorkflow(item: {
   }
 
   return item.requestedWorkflowName ?? "-";
+}
+
+function displayTypeLabel(type: WorkflowRequestType): string {
+  return type === WorkflowRequestType.IMPROVEMENT ? "Improvement" : "New Workflow";
 }
 
 export default async function WorkflowRequestsPage({
@@ -169,199 +178,244 @@ export default async function WorkflowRequestsPage({
     DONE: 0,
     REJECTED: 0
   };
+
   for (const row of statusCountsRaw) {
     statusCounts[row.status] = row._count.status;
   }
 
   const totalPages = Math.max(1, Math.ceil(total / filters.pageSize));
+  const pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1);
 
   return (
-    <AppShell
-      session={session}
-      activeNav="workflow-requests"
-      title="Workflow Improvement Requests"
-      subtitle="Track improvement proposals and new workflow demands"
-      topRightActions={
-        <>
-          <Link href="/workflow-requests/new">Create Request</Link>
-          {session.role === "ADMIN" ? (
-            <a href={`/api/v1/workflow-requests/export.csv?${rawParams.toString()}`}>Export CSV</a>
-          ) : null}
-        </>
-      }
-    >
-      <section className="kpi-grid workflow-request-kpi-grid">
-        <article className="card stack" style={{ gap: 4 }}>
-          <h3>PROPOSED</h3>
-          <p style={{ fontSize: 28, fontWeight: 700 }}>{statusCounts.PROPOSED}</p>
-        </article>
-        <article className="card stack" style={{ gap: 4 }}>
-          <h3>TRIAGED</h3>
-          <p style={{ fontSize: 28, fontWeight: 700 }}>{statusCounts.TRIAGED}</p>
-        </article>
-        <article className="card stack" style={{ gap: 4 }}>
-          <h3>PLANNED</h3>
-          <p style={{ fontSize: 28, fontWeight: 700 }}>{statusCounts.PLANNED}</p>
-        </article>
-        <article className="card stack" style={{ gap: 4 }}>
-          <h3>IN_PROGRESS</h3>
-          <p style={{ fontSize: 28, fontWeight: 700 }}>{statusCounts.IN_PROGRESS}</p>
-        </article>
-        <article className="card stack" style={{ gap: 4 }}>
-          <h3>DONE</h3>
-          <p style={{ fontSize: 28, fontWeight: 700 }}>{statusCounts.DONE}</p>
-        </article>
-        <article className="card stack" style={{ gap: 4 }}>
-          <h3>REJECTED</h3>
-          <p style={{ fontSize: 28, fontWeight: 700 }}>{statusCounts.REJECTED}</p>
-        </article>
-      </section>
-
-      <section className="card stack">
-        <h2>Filters</h2>
-        <form method="GET" className="form-row">
-          <label className="stack" style={{ gap: 4 }}>
-            <span>Type</span>
-            <WorkflowFilterSelect
-              name="type"
-              initialValue={filters.type ?? ""}
-              options={typeFilterOptions}
-              emptyOptionLabel="All type"
-              placeholder="Select type"
-              autoSubmitOnSelect
-            />
-          </label>
-
-          <label className="stack status-filter-field" style={{ gap: 4 }}>
-            <span>Status</span>
-            <WorkflowFilterSelect
-              name="status"
-              initialValue={filters.status ?? ""}
-              options={statusFilterOptions}
-              emptyOptionLabel="All"
-              placeholder="Select status"
-              autoSubmitOnSelect
-            />
-          </label>
-
-          <label className="stack priority-filter-field" style={{ gap: 4 }}>
-            <span>Priority</span>
-            <WorkflowFilterSelect
-              name="priority"
-              initialValue={filters.priority ?? ""}
-              options={priorityFilterOptions}
-              emptyOptionLabel="All priority"
-              placeholder="Select priority"
-              autoSubmitOnSelect
-            />
-          </label>
-
-          <label className="stack" style={{ gap: 4 }}>
-            <span>Workflow</span>
-            <WorkflowFilterSelect
-              name="workflow"
-              initialValue={filters.workflow ?? ""}
-              options={workflowFilterOptions}
-              emptyOptionLabel="All workflow"
-              placeholder="Filter by workflow"
-              autoSubmitOnSelect
-            />
-          </label>
-
-          <label className="stack" style={{ gap: 4 }}>
-            <span>Assignee</span>
-            <WorkflowFilterSelect
-              name="assignee"
-              initialValue={filters.assignee ?? ""}
-              options={assigneeFilterOptions}
-              emptyOptionLabel="All assignee"
-              placeholder="Filter by assignee"
-              autoSubmitOnSelect
-            />
-          </label>
-
-          <label className="stack" style={{ gap: 4 }}>
-            <span>From (UTC)</span>
-            <UtcDateTimeFilterInput name="from" initialValue={asString(searchParams.from) ?? ""} autoSubmitOnChange />
-          </label>
-
-          <label className="stack" style={{ gap: 4 }}>
-            <span>To (UTC)</span>
-            <UtcDateTimeFilterInput name="to" initialValue={asString(searchParams.to) ?? ""} autoSubmitOnChange />
-          </label>
-
-          <input type="hidden" name="pageSize" value={String(filters.pageSize)} />
-          <Link href="/workflow-requests" className="filter-reset-button" style={{ alignSelf: "end" }}>
-            Reset
-          </Link>
-        </form>
-      </section>
-
-      <section className="card stack">
-        <h2>Request List</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Created At (UTC)</th>
-              <th>Type</th>
-              <th>Title</th>
-              <th>Workflow</th>
-              <th>Priority</th>
-              <th>Status</th>
-              <th>Assignee</th>
-              <th>Proposed By</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.length === 0 ? (
-              <tr>
-                <td colSpan={9} className="muted">
-                  No workflow requests found.
-                </td>
-              </tr>
-            ) : (
-              items.map((item) => (
-                <tr key={item.id}>
-                  <td>{item.createdAt.toISOString()}</td>
-                  <td>{item.type}</td>
-                  <td title={item.title}>{item.title.slice(0, 120)}</td>
-                  <td>{displayWorkflow(item)}</td>
-                  <td>
-                    <span className={`badge priority-badge priority-${item.priority}`}>{item.priority}</span>
-                  </td>
-                  <td>
-                    <span className={`badge ${item.status}`}>{item.status}</span>
-                  </td>
-                  <td>{item.assigneeUsername ?? "-"}</td>
-                  <td>{item.proposedBy}</td>
-                  <td>
-                    <Link href={`/workflow-requests/${item.id}`}>View</Link>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-
-        <div className="actions" style={{ justifyContent: "space-between" }}>
-          <p className="muted">
-            Page {filters.page} / {totalPages} (Total {total})
-          </p>
-          <div className="actions">
-            {filters.page > 1 ? (
-              <Link href={buildPageLink(rawParams, filters.page - 1)}>Previous</Link>
-            ) : (
-              <span className="muted">Previous</span>
-            )}
-            {filters.page < totalPages ? (
-              <Link href={buildPageLink(rawParams, filters.page + 1)}>Next</Link>
-            ) : (
-              <span className="muted">Next</span>
-            )}
+    <AppShell session={session} activeNav="workflow-requests">
+      <div className="flex flex-col gap-6">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h1 className="text-xl font-semibold text-foreground">Workflow Requests</h1>
+            <p className="text-sm text-muted-foreground">Track improvement requests and new workflow proposals</p>
+          </div>
+          <div className="flex items-center gap-2">
+            {session.role === "ADMIN" ? (
+              <a
+                href={`/api/v1/workflow-requests/export.csv?${rawParams.toString()}`}
+                className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+              >
+                <Download className="h-3.5 w-3.5" />
+                Export CSV
+              </a>
+            ) : null}
+            <Link
+              href="/workflow-requests/new"
+              className="flex items-center gap-1.5 rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            >
+              <Plus className="h-4 w-4" />
+              New Request
+            </Link>
           </div>
         </div>
-      </section>
+
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+          <KpiCard label="Proposed" value={statusCounts.PROPOSED} borderColor="border-blue-500/20" bgColor="bg-blue-500/10" />
+          <KpiCard label="Triaged" value={statusCounts.TRIAGED} borderColor="border-cyan-500/20" bgColor="bg-cyan-500/10" />
+          <KpiCard label="Planned" value={statusCounts.PLANNED} borderColor="border-indigo-500/20" bgColor="bg-indigo-500/10" />
+          <KpiCard label="In Progress" value={statusCounts.IN_PROGRESS} borderColor="border-amber-500/20" bgColor="bg-amber-500/10" />
+          <KpiCard label="Done" value={statusCounts.DONE} borderColor="border-emerald-500/20" bgColor="bg-emerald-500/10" />
+          <KpiCard label="Rejected" value={statusCounts.REJECTED} borderColor="border-zinc-500/20" bgColor="bg-zinc-500/10" />
+        </div>
+
+        <section className="rounded-lg border border-border bg-card p-4">
+          <form method="GET" className="flex flex-wrap items-end gap-3">
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-muted-foreground">Type</label>
+              <WorkflowFilterSelect
+                name="type"
+                initialValue={filters.type ?? ""}
+                options={typeFilterOptions}
+                emptyOptionLabel="All"
+                autoSubmitOnSelect
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-muted-foreground">Status</label>
+              <WorkflowFilterSelect
+                name="status"
+                initialValue={filters.status ?? ""}
+                options={statusFilterOptions}
+                emptyOptionLabel="All"
+                autoSubmitOnSelect
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-muted-foreground">Priority</label>
+              <WorkflowFilterSelect
+                name="priority"
+                initialValue={filters.priority ?? ""}
+                options={priorityFilterOptions}
+                emptyOptionLabel="All"
+                autoSubmitOnSelect
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-muted-foreground">Workflow</label>
+              <WorkflowFilterSelect
+                name="workflow"
+                initialValue={filters.workflow ?? ""}
+                options={workflowFilterOptions}
+                emptyOptionLabel="All"
+                autoSubmitOnSelect
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-muted-foreground">Assignee</label>
+              <WorkflowFilterSelect
+                name="assignee"
+                initialValue={filters.assignee ?? ""}
+                options={assigneeFilterOptions}
+                emptyOptionLabel="All"
+                autoSubmitOnSelect
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-muted-foreground">From (UTC)</label>
+              <UtcDateTimeFilterInput name="from" initialValue={asString(searchParams.from) ?? ""} autoSubmitOnChange />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-muted-foreground">To (UTC)</label>
+              <UtcDateTimeFilterInput name="to" initialValue={asString(searchParams.to) ?? ""} autoSubmitOnChange />
+            </div>
+
+            <input type="hidden" name="pageSize" value={String(filters.pageSize)} />
+            <Link
+              href="/workflow-requests"
+              className="flex h-9 items-center gap-1 rounded-md border border-border px-3 text-xs text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+            >
+              Reset
+            </Link>
+          </form>
+        </section>
+
+        <div className="overflow-hidden rounded-lg border border-border bg-card">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border bg-secondary/30">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">ID</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Title</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Type</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Status</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Priority</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Workflow</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Assignee</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Created (UTC)</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.length === 0 ? (
+                  <tr>
+                    <td colSpan={9} className="px-4 py-12 text-center text-sm text-muted-foreground">
+                      No workflow requests found
+                    </td>
+                  </tr>
+                ) : (
+                  items.map((item) => (
+                    <tr key={item.id} className="border-b border-border/50 transition-colors hover:bg-secondary/20">
+                      <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{item.id}</td>
+                      <td className="max-w-[240px] truncate px-4 py-3 font-medium text-foreground" title={item.title}>
+                        {item.title}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={cn(
+                            "inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium",
+                            TYPE_COLOR_MAP[item.type]
+                          )}
+                        >
+                          {displayTypeLabel(item.type)}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <StatusBadge status={item.status} />
+                      </td>
+                      <td className="px-4 py-3">
+                        <PriorityBadge priority={item.priority} />
+                      </td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">{displayWorkflow(item)}</td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">{item.assigneeUsername ?? "--"}</td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">{item.createdAt.toISOString()}</td>
+                      <td className="px-4 py-3 text-right">
+                        <Link
+                          href={`/workflow-requests/${item.id}`}
+                          className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-primary transition-colors hover:bg-primary/10"
+                        >
+                          Details
+                          <ExternalLink className="h-3 w-3" />
+                        </Link>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="flex items-center justify-between border-t border-border px-4 py-3">
+            <p className="text-xs text-muted-foreground">
+              Showing {Math.min((filters.page - 1) * filters.pageSize + 1, total)}-
+              {Math.min(filters.page * filters.pageSize, total)} of {total}
+            </p>
+            <div className="flex items-center gap-1">
+              <Link
+                href={buildPageLink(rawParams, Math.max(1, filters.page - 1))}
+                aria-disabled={filters.page <= 1}
+                className="rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-secondary aria-disabled:pointer-events-none aria-disabled:opacity-30"
+              >
+                Prev
+              </Link>
+              {pageNumbers.map((pageNo) => (
+                <Link
+                  key={pageNo}
+                  href={buildPageLink(rawParams, pageNo)}
+                  className={`rounded-md px-3 py-1.5 text-xs transition-colors ${
+                    pageNo === filters.page
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-secondary"
+                  }`}
+                >
+                  {pageNo}
+                </Link>
+              ))}
+              <Link
+                href={buildPageLink(rawParams, Math.min(totalPages, filters.page + 1))}
+                aria-disabled={filters.page >= totalPages}
+                className="rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-secondary aria-disabled:pointer-events-none aria-disabled:opacity-30"
+              >
+                Next
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
     </AppShell>
+  );
+}
+
+function KpiCard({
+  label,
+  value,
+  borderColor,
+  bgColor
+}: {
+  label: string;
+  value: number;
+  borderColor: string;
+  bgColor: string;
+}): JSX.Element {
+  return (
+    <div className={cn("rounded-lg border bg-card p-4", borderColor)}>
+      <div className={cn("mb-2 h-1.5 w-10 rounded-full", bgColor)} />
+      <p className="text-2xl font-bold text-foreground">{value}</p>
+      <p className="text-xs text-muted-foreground">{label}</p>
+    </div>
   );
 }

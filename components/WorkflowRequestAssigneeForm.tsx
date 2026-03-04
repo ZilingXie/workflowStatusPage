@@ -56,24 +56,25 @@ export function WorkflowRequestAssigneeForm({
 
   if (role !== UserRole.ADMIN) {
     return (
-      <section className="card stack">
-        <h3>Assignee</h3>
-        <p>Current: {assigneeUsername ?? "-"}</p>
-        <p className="muted">Only ADMIN users can change assignee.</p>
+      <section className="rounded-lg border border-border bg-card p-6">
+        <h3 className="text-sm font-semibold text-foreground">Assignee</h3>
+        <p className="mt-2 text-sm text-foreground">Current: {assigneeUsername ?? "-"}</p>
+        <p className="mt-1 text-sm text-muted-foreground">Only ADMIN users can change assignee.</p>
       </section>
     );
   }
 
   return (
-    <section className="card stack">
-      <h3>Assignee</h3>
-      <form className="stack" onSubmit={onSubmit}>
-        <label className="stack" style={{ gap: 4 }}>
-          <span>Assigned To</span>
+    <section className="rounded-lg border border-border bg-card p-6">
+      <h3 className="text-sm font-semibold text-foreground">Assignee</h3>
+      <form className="mt-4 flex flex-col gap-3" onSubmit={onSubmit}>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs text-muted-foreground">Assigned To</label>
           <select
             value={nextAssignee}
             onChange={(event) => setNextAssignee(event.target.value)}
             disabled={loading}
+            className="h-10 rounded-md border border-input bg-input/50 px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           >
             <option value="">Unassigned</option>
             {assigneeOptions.map((username) => (
@@ -82,11 +83,15 @@ export function WorkflowRequestAssigneeForm({
               </option>
             ))}
           </select>
-        </label>
+        </div>
 
-        {error ? <p style={{ color: "#b42318" }}>{error}</p> : null}
+        {error ? <p className="text-sm text-destructive">{error}</p> : null}
 
-        <button type="submit" disabled={loading}>
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-fit rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+        >
           {loading ? "Saving..." : "Update Assignee"}
         </button>
       </form>

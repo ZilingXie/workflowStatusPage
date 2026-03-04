@@ -116,11 +116,24 @@ export function WorkflowRequestCreateForm({
   const isNewWorkflow = state.type === WorkflowRequestType.NEW_WORKFLOW;
 
   return (
-    <form className="card stack" onSubmit={onSubmit}>
-      <h2>Create Workflow Request</h2>
+    <form
+      className="flex max-w-2xl flex-col gap-5 rounded-lg border border-border bg-card p-6"
+      onSubmit={onSubmit}
+    >
+      <div className="flex flex-col gap-1.5">
+        <label className="text-sm font-medium text-foreground">Title</label>
+        <input
+          value={state.title}
+          onChange={(event) => setState((prev) => ({ ...prev, title: event.target.value }))}
+          placeholder="Short request title"
+          required
+          disabled={loading}
+          className="h-10 rounded-md border border-input bg-input/50 px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+        />
+      </div>
 
-      <label className="stack" style={{ gap: 4 }}>
-        <span>Type</span>
+      <div className="flex flex-col gap-1.5">
+        <label className="text-sm font-medium text-foreground">Type</label>
         <select
           value={state.type}
           onChange={(event) =>
@@ -130,38 +143,30 @@ export function WorkflowRequestCreateForm({
             }))
           }
           disabled={loading}
+          className="h-10 rounded-md border border-input bg-input/50 px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
         >
-          <option value={WorkflowRequestType.IMPROVEMENT}>IMPROVEMENT</option>
-          <option value={WorkflowRequestType.NEW_WORKFLOW}>NEW_WORKFLOW</option>
+          <option value={WorkflowRequestType.IMPROVEMENT}>Improvement</option>
+          <option value={WorkflowRequestType.NEW_WORKFLOW}>New Workflow</option>
         </select>
-      </label>
+      </div>
 
-      <label className="stack" style={{ gap: 4 }}>
-        <span>Title</span>
-        <input
-          value={state.title}
-          onChange={(event) => setState((prev) => ({ ...prev, title: event.target.value }))}
-          placeholder="Short request title"
-          required
-          disabled={loading}
-        />
-      </label>
-
-      <label className="stack" style={{ gap: 4 }}>
-        <span>Description</span>
+      <div className="flex flex-col gap-1.5">
+        <label className="text-sm font-medium text-foreground">Description</label>
         <textarea
           value={state.description}
           onChange={(event) => setState((prev) => ({ ...prev, description: event.target.value }))}
           placeholder="Describe problem, goal and expected outcome"
           required
           disabled={loading}
+          rows={6}
+          className="rounded-md border border-input bg-input/50 p-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
         />
-      </label>
+      </div>
 
       {isImprovement ? (
         <>
-          <label className="stack" style={{ gap: 4 }}>
-            <span>Workflow Name</span>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-foreground">Workflow Name</label>
             <input
               value={state.workflowName}
               onChange={(event) =>
@@ -170,11 +175,12 @@ export function WorkflowRequestCreateForm({
               placeholder="Existing workflow name"
               required
               disabled={loading}
+              className="h-10 rounded-md border border-input bg-input/50 px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
-          </label>
+          </div>
 
-          <label className="stack" style={{ gap: 4 }}>
-            <span>Workflow Reference (optional)</span>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-foreground">Workflow Reference (optional)</label>
             <input
               value={state.workflowReference}
               onChange={(event) =>
@@ -182,15 +188,16 @@ export function WorkflowRequestCreateForm({
               }
               placeholder="Workflow URL or ID"
               disabled={loading}
+              className="h-10 rounded-md border border-input bg-input/50 px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
-          </label>
+          </div>
         </>
       ) : null}
 
       {isNewWorkflow ? (
         <>
-          <label className="stack" style={{ gap: 4 }}>
-            <span>Requested Workflow Name</span>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-foreground">Requested Workflow Name</label>
             <input
               value={state.requestedWorkflowName}
               onChange={(event) =>
@@ -199,11 +206,12 @@ export function WorkflowRequestCreateForm({
               placeholder="Name of new workflow"
               required
               disabled={loading}
+              className="h-10 rounded-md border border-input bg-input/50 px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
-          </label>
+          </div>
 
-          <label className="stack" style={{ gap: 4 }}>
-            <span>Business Goal</span>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-foreground">Business Goal</label>
             <textarea
               value={state.businessGoal}
               onChange={(event) =>
@@ -212,11 +220,13 @@ export function WorkflowRequestCreateForm({
               placeholder="What business outcome this workflow should deliver"
               required
               disabled={loading}
+              rows={4}
+              className="rounded-md border border-input bg-input/50 p-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
-          </label>
+          </div>
 
-          <label className="stack" style={{ gap: 4 }}>
-            <span>Expected Trigger</span>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-foreground">Expected Trigger</label>
             <textarea
               value={state.expectedTrigger}
               onChange={(event) =>
@@ -225,42 +235,47 @@ export function WorkflowRequestCreateForm({
               placeholder="When/how this workflow should be triggered"
               required
               disabled={loading}
+              rows={4}
+              className="rounded-md border border-input bg-input/50 p-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
-          </label>
+          </div>
         </>
       ) : null}
 
-      <label className="stack" style={{ gap: 4 }}>
-        <span>Priority</span>
+      <div className="flex flex-col gap-1.5">
+        <label className="text-sm font-medium text-foreground">Priority</label>
         <select
           value={state.priority}
           onChange={(event) =>
             setState((prev) => ({ ...prev, priority: event.target.value as IncidentPriority }))
           }
           disabled={loading}
+          className="h-10 rounded-md border border-input bg-input/50 px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
         >
           <option value={IncidentPriority.L}>L</option>
           <option value={IncidentPriority.M}>M</option>
           <option value={IncidentPriority.H}>H</option>
         </select>
-      </label>
+      </div>
 
       {sourceIncidentId ? (
-        <label className="stack" style={{ gap: 4 }}>
-          <span>Source Incident ID</span>
-          <input value={sourceIncidentId} readOnly />
-        </label>
+        <div className="rounded-md border border-border/50 bg-secondary/30 px-3 py-2">
+          <p className="text-xs text-muted-foreground">
+            Linked to incident: <span className="font-mono font-medium text-foreground">{sourceIncidentId}</span>
+          </p>
+        </div>
       ) : null}
 
       {isAdmin ? (
-        <label className="stack" style={{ gap: 4 }}>
-          <span>Assignee (optional)</span>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-sm font-medium text-foreground">Assignee (optional)</label>
           <select
             value={state.assigneeUsername}
             onChange={(event) =>
               setState((prev) => ({ ...prev, assigneeUsername: event.target.value }))
             }
             disabled={loading}
+            className="h-10 rounded-md border border-input bg-input/50 px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           >
             <option value="">Unassigned</option>
             {assigneeOptions.map((username) => (
@@ -269,12 +284,16 @@ export function WorkflowRequestCreateForm({
               </option>
             ))}
           </select>
-        </label>
+        </div>
       ) : null}
 
-      {error ? <p style={{ color: "#b42318" }}>{error}</p> : null}
+      {error ? <p className="text-sm text-destructive">{error}</p> : null}
 
-      <button type="submit" disabled={loading}>
+      <button
+        type="submit"
+        disabled={loading}
+        className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+      >
         {loading ? "Creating..." : "Create Request"}
       </button>
     </form>
