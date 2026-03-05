@@ -3,6 +3,7 @@
 import { UserRole, WorkflowRequestStatus } from "@prisma/client";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import { withBasePath } from "@/lib/basePath";
 
 type Props = {
   requestId: string;
@@ -38,7 +39,7 @@ export function WorkflowRequestStatusForm({ requestId, status, role }: Props): J
     setError(null);
 
     try {
-      const response = await fetch(`/api/v1/workflow-requests/${requestId}/status`, {
+      const response = await fetch(withBasePath(`/api/v1/workflow-requests/${requestId}/status`), {
         method: "PATCH",
         headers: {
           "content-type": "application/json"
