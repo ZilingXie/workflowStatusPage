@@ -3,6 +3,7 @@
 import { LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { withBasePath } from "@/lib/basePath";
 
 type Props = {
   className?: string;
@@ -16,7 +17,7 @@ export function LogoutButton({ className, iconOnly = false }: Props): JSX.Elemen
   async function onLogout(): Promise<void> {
     setLoading(true);
     try {
-      await fetch("/api/v1/auth/logout", { method: "POST" });
+      await fetch(withBasePath("/api/v1/auth/logout"), { method: "POST" });
       router.push("/login");
       router.refresh();
     } finally {
