@@ -3,6 +3,7 @@
 import { IncidentPriority, WorkflowRequestType } from "@prisma/client";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { withBasePath } from "@/lib/basePath";
 
 type Props = {
   initialType: WorkflowRequestType;
@@ -81,7 +82,7 @@ export function WorkflowRequestCreateForm({
         ...(isAdmin && state.assigneeUsername ? { assigneeUsername: state.assigneeUsername } : {})
       };
 
-      const response = await fetch("/api/v1/workflow-requests", {
+      const response = await fetch(withBasePath("/api/v1/workflow-requests"), {
         method: "POST",
         headers: {
           "content-type": "application/json"

@@ -3,6 +3,7 @@
 import { Activity } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { withBasePath } from "@/lib/basePath";
 
 type FormState = {
   username: string;
@@ -22,7 +23,7 @@ export function LoginForm(): JSX.Element {
     setError(null);
 
     try {
-      const response = await fetch("/api/v1/auth/login", {
+      const response = await fetch(withBasePath("/api/v1/auth/login"), {
         method: "POST",
         headers: {
           "content-type": "application/json"
