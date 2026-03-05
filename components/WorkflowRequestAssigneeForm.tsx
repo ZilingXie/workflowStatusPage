@@ -3,6 +3,7 @@
 import { UserRole } from "@prisma/client";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { withBasePath } from "@/lib/basePath";
 
 type Props = {
   requestId: string;
@@ -29,7 +30,7 @@ export function WorkflowRequestAssigneeForm({
     setError(null);
 
     try {
-      const response = await fetch(`/api/v1/workflow-requests/${requestId}/assignee`, {
+      const response = await fetch(withBasePath(`/api/v1/workflow-requests/${requestId}/assignee`), {
         method: "PATCH",
         headers: {
           "content-type": "application/json"
