@@ -2,7 +2,7 @@ import { UserRole, WorkflowRequestEventType } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSessionFromRequest } from "@/lib/auth/guards";
-import { getConfiguredUsernames } from "@/lib/auth/users";
+import { getAccountUsernames } from "@/lib/auth/users";
 import { jsonError } from "@/lib/http";
 import { workflowRequestAssigneeUpdateSchema } from "@/lib/validation";
 
@@ -45,9 +45,9 @@ export async function PATCH(request: NextRequest, { params }: Params): Promise<N
 
   const nextAssignee = normalizeAssignee(parsed.data.assigneeUsername);
   if (nextAssignee) {
-    const usernames = new Set(getConfiguredUsernames().map((value) => value.toLowerCase()));
+    const usernames = new Set((await getAccountUsernames()).map((value) => value.toLowerCase()));
     if (!usernames.has(nextAssignee.toLowerCase())) {
-      return jsonError("assigneeUsername is not a configured user", 400);
+      return jsonError("assigneeUsername is not an existing account", 400);
     }
   }
 

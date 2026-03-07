@@ -13,7 +13,6 @@ RUN APP_BASE_URL=http://localhost:3000${NEXT_PUBLIC_BASE_PATH} \
     DATABASE_URL=postgresql://postgres:postgres@db:5432/n8n_status \
     INGEST_TOKEN=build_token \
     SESSION_SECRET=build_secret \
-    APP_USERS_JSON='[{"username":"admin","role":"ADMIN","passwordHash":"$2a$12$QxsPXh3HOfsQW5ogYWkD7O5iPP0vJeyZJy.Gj1VyfVaAoJlXSlam6"}]' \
     npm run build
 
 FROM node:20-bookworm-slim AS runner

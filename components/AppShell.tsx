@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Activity, AlertTriangle, GitPullRequest } from "lucide-react";
+import { Activity, AlertTriangle, GitPullRequest, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LogoutButton } from "@/components/LogoutButton";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -7,16 +7,20 @@ import { ServerSession } from "@/lib/auth/server";
 
 type Props = {
   session: ServerSession;
-  activeNav?: "incidents" | "workflow-requests";
+  activeNav?: "incidents" | "workflow-requests" | "accounts";
   children: React.ReactNode;
 };
 
-const navItems = [
+const baseNavItems = [
   { href: "/incidents", label: "Incidents", icon: AlertTriangle },
   { href: "/workflow-requests", label: "Workflow Requests", icon: GitPullRequest }
 ] as const;
 
 export function AppShell({ session, activeNav, children }: Props): JSX.Element {
+  const navItems = session.role === "ADMIN"
+    ? [...baseNavItems, { href: "/accounts", label: "Accounts", icon: Users }]
+    : baseNavItems;
+
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-50 flex h-14 items-center border-b border-border bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60 lg:px-6">

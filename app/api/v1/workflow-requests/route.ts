@@ -2,7 +2,7 @@ import { IncidentPriority, UserRole, WorkflowRequestEventType } from "@prisma/cl
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSessionFromRequest } from "@/lib/auth/guards";
-import { getConfiguredUsernames } from "@/lib/auth/users";
+import { getAccountUsernames } from "@/lib/auth/users";
 import { jsonError } from "@/lib/http";
 import {
   buildWorkflowRequestWhere,
@@ -88,9 +88,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   if (assigneeUsername) {
-    const usernames = new Set(getConfiguredUsernames().map((value) => value.toLowerCase()));
+    const usernames = new Set((await getAccountUsernames()).map((value) => value.toLowerCase()));
     if (!usernames.has(assigneeUsername.toLowerCase())) {
-      return jsonError("assigneeUsername is not a configured user", 400);
+      return jsonError("assigneeUsername is not an existing account", 400);
     }
   }
 

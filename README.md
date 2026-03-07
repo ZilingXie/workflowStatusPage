@@ -45,6 +45,8 @@ MVP implementation using Next.js + TypeScript + Prisma/PostgreSQL.
 - `/workflow-requests`
 - `/workflow-requests/new`
 - `/workflow-requests/:id`
+- `/accounts` (ADMIN only)
+- `/accounts/new` (ADMIN only, placeholder)
 
 ## Phase 2 Integration
 
@@ -60,3 +62,4 @@ MVP implementation using Next.js + TypeScript + Prisma/PostgreSQL.
 - Workflow request list does not auto-refresh (manual refresh by design).
 - All timestamps are displayed in UTC (`toISOString`).
 - Session cookie TTL is 8 hours.
+- Login accounts are stored in DB table `user_accounts`; bootstrap `ADMIN` account is created manually.

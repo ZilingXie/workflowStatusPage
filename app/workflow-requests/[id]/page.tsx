@@ -9,7 +9,7 @@ import { WorkflowRequestComments } from "@/components/WorkflowRequestComments";
 import { WorkflowRequestEditForm } from "@/components/WorkflowRequestEditForm";
 import { WorkflowRequestStatusForm } from "@/components/WorkflowRequestStatusForm";
 import { requireServerSession } from "@/lib/auth/server";
-import { getConfiguredUsernames } from "@/lib/auth/users";
+import { getAccountUsernames } from "@/lib/auth/users";
 import { prisma } from "@/lib/db";
 import { TYPE_COLOR_MAP } from "@/lib/ui";
 import { cn } from "@/lib/utils";
@@ -55,7 +55,7 @@ export default async function WorkflowRequestDetailPage({ params }: Params): Pro
     notFound();
   }
 
-  const assigneeOptions = getConfiguredUsernames();
+  const assigneeOptions = await getAccountUsernames();
   const canEditBase = canEditWorkflowRequestBase(session.role, session.username, item);
 
   return (

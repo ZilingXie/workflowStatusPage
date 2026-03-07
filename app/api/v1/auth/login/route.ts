@@ -20,7 +20,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   try {
-    const user = findUserByUsername(parsed.data.username);
+    const user = await findUserByUsername(parsed.data.username);
     if (!user) {
       return jsonError("Invalid username or password", 401);
     }
@@ -52,6 +52,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     return response;
   } catch {
-    return jsonError("Authentication configuration error", 500);
+    return jsonError("Authentication service error", 500);
   }
 }

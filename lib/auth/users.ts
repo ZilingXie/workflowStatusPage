@@ -1,82 +1,79 @@
 import { UserRole } from "@prisma/client";
-import { env } from "@/lib/env";
+import { prisma } from "@/lib/db";
 
-type ConfiguredUser = {
+export type AuthUser = {
   username: string;
   role: UserRole;
   passwordHash: string;
 };
 
-let cachedUsers: ConfiguredUser[] | null = null;
+export type UserAccountSummary = {
+  id: string;
+  username: string;
+  role: UserRole;
+  createdAt: Date;
+  updatedAt: Date;
+};
 
-function normalizeEscapedDollars(value: string): string {
-  return value.replace(/\\+\$/g, "$");
+function normalizeUsername(value: string): string {
+  return value.trim();
 }
 
-function parseConfiguredUsers(): ConfiguredUser[] {
-  let parsed: unknown;
+export async function findUserByUsername(username: string): Promise<AuthUser | null> {
+  const normalized = normalizeUsername(username);
 
-  try {
-    parsed = JSON.parse(normalizeEscapedDollars(env.appUsersJson));
-  } catch {
-    throw new Error("APP_USERS_JSON must be valid JSON");
+  if (!normalized) {
+    return null;
   }
 
-  if (!Array.isArray(parsed)) {
-    throw new Error("APP_USERS_JSON must be a JSON array");
-  }
-
-  const users: ConfiguredUser[] = parsed.map((item) => {
-    if (!item || typeof item !== "object") {
-      throw new Error("APP_USERS_JSON contains an invalid user record");
+  const user = await prisma.userAccount.findFirst({
+    where: {
+      username: {
+        equals: normalized,
+        mode: "insensitive"
+      }
+    },
+    orderBy: {
+      createdAt: "asc"
+    },
+    select: {
+      username: true,
+      role: true,
+      passwordHash: true
     }
-
-    const candidate = item as Record<string, unknown>;
-    const username = candidate.username;
-    const role = candidate.role;
-    const passwordHash = candidate.passwordHash;
-
-    if (typeof username !== "string" || username.length === 0) {
-      throw new Error("APP_USERS_JSON user.username must be a non-empty string");
-    }
-
-    if (role !== UserRole.ADMIN && role !== UserRole.OPERATOR) {
-      throw new Error("APP_USERS_JSON user.role must be ADMIN or OPERATOR");
-    }
-
-    if (typeof passwordHash !== "string" || passwordHash.length < 20) {
-      throw new Error("APP_USERS_JSON user.passwordHash appears invalid");
-    }
-
-    const normalizedHash = normalizeEscapedDollars(passwordHash);
-
-    return {
-      username,
-      role,
-      passwordHash: normalizedHash
-    };
   });
 
-  if (users.length === 0) {
-    throw new Error("APP_USERS_JSON must include at least one user");
+  if (!user) {
+    return null;
   }
 
-  return users;
+  return user;
 }
 
-export function getConfiguredUsers(): ConfiguredUser[] {
-  if (!cachedUsers) {
-    cachedUsers = parseConfiguredUsers();
-  }
+export async function getAccountUsernames(): Promise<string[]> {
+  const users = await prisma.userAccount.findMany({
+    orderBy: {
+      username: "asc"
+    },
+    select: {
+      username: true
+    }
+  });
 
-  return cachedUsers;
+  return users.map((user) => user.username);
 }
 
-export function findUserByUsername(username: string): ConfiguredUser | undefined {
-  const normalized = username.trim().toLowerCase();
-  return getConfiguredUsers().find((user) => user.username.toLowerCase() === normalized);
-}
-
-export function getConfiguredUsernames(): string[] {
-  return getConfiguredUsers().map((user) => user.username);
+export async function listUserAccounts(): Promise<UserAccountSummary[]> {
+  return prisma.userAccount.findMany({
+    orderBy: {
+      username: "asc"
+    },
+    select: {
+      id: true,
+      username: true,
+      role: true,
+      createdAt: true,
+      updatedAt: true
+    }
+  });
 }

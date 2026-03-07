@@ -3,7 +3,7 @@ import { UserRole, WorkflowRequestType } from "@prisma/client";
 import Link from "next/link";
 import { AppShell } from "@/components/AppShell";
 import { WorkflowRequestCreateForm } from "@/components/WorkflowRequestCreateForm";
-import { getConfiguredUsernames } from "@/lib/auth/users";
+import { getAccountUsernames } from "@/lib/auth/users";
 import { requireServerSession } from "@/lib/auth/server";
 import { prisma } from "@/lib/db";
 
@@ -48,7 +48,7 @@ export default async function NewWorkflowRequestPage({
     : null;
 
   const initialType = normalizeType(asString(searchParams.type));
-  const assigneeOptions = getConfiguredUsernames();
+  const assigneeOptions = await getAccountUsernames();
   const initialWorkflowName = asString(searchParams.workflowName) ?? incident?.workflowName ?? "";
   const initialWorkflowReference = asString(searchParams.workflowReference) ?? incident?.workflowId ?? "";
 

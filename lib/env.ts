@@ -14,6 +14,5 @@ export const env = {
   timezone: process.env.TZ ?? "UTC",
   databaseUrl: getRequiredEnv("DATABASE_URL"),
   ingestToken: getRequiredEnv("INGEST_TOKEN"),
-  sessionSecret: getRequiredEnv("SESSION_SECRET"),
-  appUsersJson: getRequiredEnv("APP_USERS_JSON")
+  sessionSecret: getRequiredEnv("SESSION_SECRET")
 } as const;
