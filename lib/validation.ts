@@ -140,3 +140,13 @@ export const workflowRequestCommentCreateSchema = z.object({
 export const workflowRequestCommentUpdateSchema = z.object({
   content: z.string().trim().min(1).max(4000)
 });
+
+export const accountInvitationCreateSchema = z.object({
+  email: z.string().trim().email().max(320)
+});
+
+export const accountInvitationCompleteSchema = z.object({
+  token: z.string().min(20).max(512),
+  username: z.string().trim().min(1).max(100),
+  password: z.string().min(8).max(200)
+});

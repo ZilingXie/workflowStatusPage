@@ -42,11 +42,14 @@ MVP implementation using Next.js + TypeScript + Prisma/PostgreSQL.
 - `PATCH /api/v1/workflow-requests/:id/comments/:commentId`
 - `DELETE /api/v1/workflow-requests/:id/comments/:commentId`
 - `GET /api/v1/workflow-requests/export.csv`
+- `POST /api/v1/accounts/invitations` (ADMIN only)
+- `POST /api/v1/accounts/invitations/complete`
 - `/workflow-requests`
 - `/workflow-requests/new`
 - `/workflow-requests/:id`
 - `/accounts` (ADMIN only)
-- `/accounts/new` (ADMIN only, placeholder)
+- `/accounts/new` (ADMIN only)
+- `/accounts/invite/:token`
 
 ## Phase 2 Integration
 
