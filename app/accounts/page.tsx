@@ -72,6 +72,7 @@ export default async function AccountsPage(): Promise<JSX.Element> {
               <thead>
                 <tr className="border-b border-border bg-secondary/30">
                   <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Username</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Email</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Role</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Created At (UTC)</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Updated At (UTC)</th>
@@ -80,7 +81,7 @@ export default async function AccountsPage(): Promise<JSX.Element> {
               <tbody>
                 {accounts.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="px-4 py-10 text-center text-sm text-muted-foreground">
+                    <td colSpan={5} className="px-4 py-10 text-center text-sm text-muted-foreground">
                       No account records found.
                     </td>
                   </tr>
@@ -88,6 +89,7 @@ export default async function AccountsPage(): Promise<JSX.Element> {
                   accounts.map((account) => (
                     <tr key={account.id} className="border-b border-border/50 transition-colors hover:bg-secondary/20">
                       <td className="px-4 py-3 font-medium text-foreground">{account.username}</td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">{account.email ?? "-"}</td>
                       <td className="px-4 py-3 text-xs text-muted-foreground">{account.role}</td>
                       <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
                         {account.createdAt.toISOString()}

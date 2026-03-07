@@ -10,6 +10,7 @@ export type AuthUser = {
 export type UserAccountSummary = {
   id: string;
   username: string;
+  email: string | null;
   role: UserRole;
   createdAt: Date;
   updatedAt: Date;
@@ -71,6 +72,7 @@ export async function listUserAccounts(): Promise<UserAccountSummary[]> {
     select: {
       id: true,
       username: true,
+      email: true,
       role: true,
       createdAt: true,
       updatedAt: true
