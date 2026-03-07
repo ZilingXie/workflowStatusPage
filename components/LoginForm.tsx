@@ -32,7 +32,21 @@ export function LoginForm(): JSX.Element {
       });
 
       if (!response.ok) {
-        setError("Invalid username or password");
+        const fallbackMessage = response.status === 400 || response.status === 401
+          ? "Invalid username or password"
+          : "Login failed. Please retry.";
+
+        try {
+          const payload = (await response.json()) as { error?: unknown };
+          if (typeof payload.error === "string" && payload.error.length > 0) {
+            setError(payload.error);
+          } else {
+            setError(fallbackMessage);
+          }
+        } catch {
+          setError(fallbackMessage);
+        }
+
         setLoading(false);
         return;
       }

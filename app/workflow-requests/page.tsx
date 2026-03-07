@@ -25,8 +25,7 @@ const TYPE_FILTER_OPTIONS: WorkflowRequestType[] = [
 
 const STATUS_FILTER_OPTIONS: WorkflowRequestStatus[] = [
   WorkflowRequestStatus.PROPOSED,
-  WorkflowRequestStatus.TRIAGED,
-  WorkflowRequestStatus.PLANNED,
+  WorkflowRequestStatus.CLARIFIED,
   WorkflowRequestStatus.IN_PROGRESS,
   WorkflowRequestStatus.DONE,
   WorkflowRequestStatus.REJECTED
@@ -185,8 +184,7 @@ export default async function WorkflowRequestsPage({
 
   const statusCounts: Record<WorkflowRequestStatus, number> = {
     PROPOSED: 0,
-    TRIAGED: 0,
-    PLANNED: 0,
+    CLARIFIED: 0,
     IN_PROGRESS: 0,
     DONE: 0,
     REJECTED: 0
@@ -227,10 +225,9 @@ export default async function WorkflowRequestsPage({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
           <KpiCard label="Proposed" value={statusCounts.PROPOSED} borderColor="border-blue-500/20" bgColor="bg-blue-500/10" />
-          <KpiCard label="Triaged" value={statusCounts.TRIAGED} borderColor="border-cyan-500/20" bgColor="bg-cyan-500/10" />
-          <KpiCard label="Planned" value={statusCounts.PLANNED} borderColor="border-indigo-500/20" bgColor="bg-indigo-500/10" />
+          <KpiCard label="Clarified" value={statusCounts.CLARIFIED} borderColor="border-cyan-500/20" bgColor="bg-cyan-500/10" />
           <KpiCard label="In Progress" value={statusCounts.IN_PROGRESS} borderColor="border-amber-500/20" bgColor="bg-amber-500/10" />
           <KpiCard label="Done" value={statusCounts.DONE} borderColor="border-emerald-500/20" bgColor="bg-emerald-500/10" />
           <KpiCard label="Rejected" value={statusCounts.REJECTED} borderColor="border-zinc-500/20" bgColor="bg-zinc-500/10" />

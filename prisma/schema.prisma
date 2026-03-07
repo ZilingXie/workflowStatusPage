@@ -31,8 +31,7 @@ enum WorkflowRequestType {
 
 enum WorkflowRequestStatus {
   PROPOSED
-  TRIAGED
-  PLANNED
+  CLARIFIED
   IN_PROGRESS
   DONE
   REJECTED

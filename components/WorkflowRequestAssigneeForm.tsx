@@ -75,7 +75,7 @@ export function WorkflowRequestAssigneeForm({
             value={nextAssignee}
             onChange={(event) => setNextAssignee(event.target.value)}
             disabled={loading}
-            className="h-10 rounded-md border border-input bg-input/50 px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            className="h-10 rounded-md border border-input bg-input/50 px-3 font-sans text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           >
             <option value="">Unassigned</option>
             {assigneeOptions.map((username) => (

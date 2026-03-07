@@ -27,8 +27,7 @@ const ALLOWED_TYPES = new Set<WorkflowRequestType>([
 
 const ALLOWED_STATUSES = new Set<WorkflowRequestStatus>([
   WorkflowRequestStatus.PROPOSED,
-  WorkflowRequestStatus.TRIAGED,
-  WorkflowRequestStatus.PLANNED,
+  WorkflowRequestStatus.CLARIFIED,
   WorkflowRequestStatus.IN_PROGRESS,
   WorkflowRequestStatus.DONE,
   WorkflowRequestStatus.REJECTED
@@ -168,9 +167,8 @@ export function canEditWorkflowRequestBase(
 }
 
 const STATUS_TRANSITIONS: Record<WorkflowRequestStatus, WorkflowRequestStatus[]> = {
-  PROPOSED: [WorkflowRequestStatus.TRIAGED],
-  TRIAGED: [WorkflowRequestStatus.PLANNED, WorkflowRequestStatus.REJECTED],
-  PLANNED: [WorkflowRequestStatus.IN_PROGRESS, WorkflowRequestStatus.REJECTED],
+  PROPOSED: [WorkflowRequestStatus.CLARIFIED],
+  CLARIFIED: [WorkflowRequestStatus.IN_PROGRESS, WorkflowRequestStatus.REJECTED],
   IN_PROGRESS: [WorkflowRequestStatus.DONE, WorkflowRequestStatus.REJECTED],
   DONE: [],
   REJECTED: []

@@ -52,7 +52,7 @@ Core request record for both request types.
 - `businessGoal` (text, optional)
 - `expectedTrigger` (text, optional)
 - `priority` (`L` | `M` | `H`, reuse existing enum)
-- `status` (`PROPOSED` | `TRIAGED` | `PLANNED` | `IN_PROGRESS` | `DONE` | `REJECTED`)
+- `status` (`PROPOSED` | `CLARIFIED` | `IN_PROGRESS` | `DONE` | `REJECTED`)
 - `proposedBy` (text, required)
 - `assigneeUsername` (text, optional, single owner)
 - `sourceIncidentId` (uuid, nullable FK to `Incident`)
@@ -145,11 +145,11 @@ Add a new API namespace: `/api/v1/workflow-requests*`.
 
 Main progression:
 
-`PROPOSED -> TRIAGED -> PLANNED -> IN_PROGRESS -> DONE`
+`PROPOSED -> CLARIFIED -> IN_PROGRESS -> DONE`
 
 Rejection path:
 
-`TRIAGED/PLANNED/IN_PROGRESS -> REJECTED`
+`CLARIFIED/IN_PROGRESS -> REJECTED`
 
 ### Validation Rules
 

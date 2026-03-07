@@ -19,35 +19,39 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return jsonError("Invalid username or password", 400);
   }
 
-  const user = findUserByUsername(parsed.data.username);
-  if (!user) {
-    return jsonError("Invalid username or password", 401);
-  }
-
-  const isValidPassword = await bcrypt.compare(parsed.data.password, user.passwordHash);
-  if (!isValidPassword) {
-    return jsonError("Invalid username or password", 401);
-  }
-
-  const token = createSessionToken({ username: user.username, role: user.role });
-
-  const response = NextResponse.json({
-    success: true,
-    user: {
-      username: user.username,
-      role: user.role
+  try {
+    const user = findUserByUsername(parsed.data.username);
+    if (!user) {
+      return jsonError("Invalid username or password", 401);
     }
-  });
 
-  response.cookies.set({
-    name: SESSION_COOKIE_NAME,
-    value: token,
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: SESSION_TTL_SECONDS
-  });
+    const isValidPassword = await bcrypt.compare(parsed.data.password, user.passwordHash);
+    if (!isValidPassword) {
+      return jsonError("Invalid username or password", 401);
+    }
 
-  return response;
+    const token = createSessionToken({ username: user.username, role: user.role });
+
+    const response = NextResponse.json({
+      success: true,
+      user: {
+        username: user.username,
+        role: user.role
+      }
+    });
+
+    response.cookies.set({
+      name: SESSION_COOKIE_NAME,
+      value: token,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: SESSION_TTL_SECONDS
+    });
+
+    return response;
+  } catch {
+    return jsonError("Authentication configuration error", 500);
+  }
 }

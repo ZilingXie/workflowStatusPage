@@ -56,7 +56,7 @@ export function WorkflowFilterSelect({
         }}
         placeholder={placeholder}
         autoComplete="off"
-        className="h-9 w-full rounded-md border border-input bg-input/50 px-2 pr-8 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+        className="h-9 w-full rounded-md border border-input bg-input/50 px-2 pr-8 font-sans text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
         aria-label={placeholder ?? name}
       />
       <button
@@ -77,7 +77,7 @@ export function WorkflowFilterSelect({
         <div className="absolute left-0 right-0 top-[calc(100%+4px)] z-50 max-h-60 overflow-y-auto rounded-md border border-input bg-card p-1 shadow-lg">
           <button
             type="button"
-            className={`w-full rounded-sm px-2 py-1.5 text-left text-xs text-foreground transition-colors hover:bg-secondary ${
+            className={`w-full rounded-sm px-2 py-1.5 text-left font-sans text-sm text-foreground transition-colors hover:bg-secondary ${
               value === "" ? "bg-secondary" : ""
             }`}
             onMouseDown={(event) => {
@@ -97,13 +97,13 @@ export function WorkflowFilterSelect({
             {allLabel}
           </button>
           {normalizedOptions.length === 0 ? (
-            <div className="px-2 py-1.5 text-xs text-muted-foreground">No option found</div>
+            <div className="px-2 py-1.5 font-sans text-sm text-muted-foreground">No option found</div>
           ) : (
             normalizedOptions.map((option) => (
               <button
                 type="button"
                 key={option}
-                className={`w-full rounded-sm px-2 py-1.5 text-left text-xs text-foreground transition-colors hover:bg-secondary ${
+                className={`w-full rounded-sm px-2 py-1.5 text-left font-sans text-sm text-foreground transition-colors hover:bg-secondary ${
                   value === option ? "bg-secondary" : ""
                 }`}
                 onMouseDown={(event) => {

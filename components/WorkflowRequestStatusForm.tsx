@@ -12,9 +12,8 @@ type Props = {
 };
 
 const NEXT_STATUSES: Record<WorkflowRequestStatus, WorkflowRequestStatus[]> = {
-  PROPOSED: [WorkflowRequestStatus.TRIAGED],
-  TRIAGED: [WorkflowRequestStatus.PLANNED, WorkflowRequestStatus.REJECTED],
-  PLANNED: [WorkflowRequestStatus.IN_PROGRESS, WorkflowRequestStatus.REJECTED],
+  PROPOSED: [WorkflowRequestStatus.CLARIFIED],
+  CLARIFIED: [WorkflowRequestStatus.IN_PROGRESS, WorkflowRequestStatus.REJECTED],
   IN_PROGRESS: [WorkflowRequestStatus.DONE, WorkflowRequestStatus.REJECTED],
   DONE: [],
   REJECTED: []
@@ -96,7 +95,7 @@ export function WorkflowRequestStatusForm({ requestId, status, role }: Props): J
             value={toStatus}
             onChange={(event) => setToStatus(event.target.value as WorkflowRequestStatus)}
             disabled={loading}
-            className="h-9 rounded-md border border-input bg-input/50 px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            className="h-9 rounded-md border border-input bg-input/50 px-3 font-sans text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           >
             {transitions.map((candidate) => (
               <option key={candidate} value={candidate}>

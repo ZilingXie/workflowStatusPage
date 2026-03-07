@@ -9,11 +9,15 @@ type ConfiguredUser = {
 
 let cachedUsers: ConfiguredUser[] | null = null;
 
+function normalizeEscapedDollars(value: string): string {
+  return value.replace(/\\+\$/g, "$");
+}
+
 function parseConfiguredUsers(): ConfiguredUser[] {
   let parsed: unknown;
 
   try {
-    parsed = JSON.parse(env.appUsersJson);
+    parsed = JSON.parse(normalizeEscapedDollars(env.appUsersJson));
   } catch {
     throw new Error("APP_USERS_JSON must be valid JSON");
   }
@@ -44,7 +48,7 @@ function parseConfiguredUsers(): ConfiguredUser[] {
       throw new Error("APP_USERS_JSON user.passwordHash appears invalid");
     }
 
-    const normalizedHash = passwordHash.replace(/\\\$/g, "$");
+    const normalizedHash = normalizeEscapedDollars(passwordHash);
 
     return {
       username,

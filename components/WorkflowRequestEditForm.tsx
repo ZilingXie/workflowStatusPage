@@ -201,7 +201,7 @@ export function WorkflowRequestEditForm({
             value={state.priority}
             onChange={(event) => setState((prev) => ({ ...prev, priority: event.target.value as IncidentPriority }))}
             disabled={loading}
-            className="h-10 rounded-md border border-input bg-input/50 px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            className="h-10 rounded-md border border-input bg-input/50 px-3 font-sans text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           >
             <option value={IncidentPriority.L}>L</option>
             <option value={IncidentPriority.M}>M</option>
