@@ -3,6 +3,7 @@
 import { UserRole, WorkflowRequestStatus } from "@prisma/client";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import { WorkflowFilterSelect } from "@/components/WorkflowFilterSelect";
 import { withBasePath } from "@/lib/basePath";
 
 type Props = {
@@ -38,15 +39,22 @@ export function WorkflowRequestStatusForm({ requestId, status, role }: Props): J
     setError(null);
 
     try {
+      const trimmedActionReason = actionReason.trim();
       const response = await fetch(withBasePath(`/api/v1/workflow-requests/${requestId}/status`), {
         method: "PATCH",
         headers: {
           "content-type": "application/json"
         },
-        body: JSON.stringify({
-          toStatus,
-          actionReason
-        })
+        body: JSON.stringify(
+          trimmedActionReason.length > 0
+            ? {
+                toStatus,
+                actionReason: trimmedActionReason
+              }
+            : {
+                toStatus
+              }
+        )
       });
 
       if (!response.ok) {
@@ -91,18 +99,15 @@ export function WorkflowRequestStatusForm({ requestId, status, role }: Props): J
       <form className="mt-4 flex flex-col gap-3" onSubmit={onSubmit}>
         <div className="flex flex-col gap-1.5">
           <label className="text-xs text-muted-foreground">Move to</label>
-          <select
-            value={toStatus}
-            onChange={(event) => setToStatus(event.target.value as WorkflowRequestStatus)}
+          <WorkflowFilterSelect
+            name="toStatus"
+            initialValue={toStatus}
+            options={transitions}
+            includeEmptyOption={false}
+            allowFreeInput={false}
             disabled={loading}
-            className="h-9 rounded-md border border-input bg-input/50 px-3 font-sans text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-          >
-            {transitions.map((candidate) => (
-              <option key={candidate} value={candidate}>
-                {candidate}
-              </option>
-            ))}
-          </select>
+            onValueChange={(value) => setToStatus(value as WorkflowRequestStatus)}
+          />
         </div>
 
         <div className="flex flex-col gap-1.5">

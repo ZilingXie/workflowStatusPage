@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import { Prisma } from "@prisma/client";
+import { Prisma, UserRole } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import { hashAccountInviteToken, isInvitationUsable } from "@/lib/auth/invitations";
 import { prisma } from "@/lib/db";
@@ -49,6 +49,20 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return jsonError("Invitation is invalid or expired", 400);
   }
 
+  const existingAccountByEmail = await prisma.userAccount.findFirst({
+    where: {
+      email: {
+        equals: invitation.email,
+        mode: "insensitive"
+      }
+    },
+    select: {
+      id: true,
+      username: true,
+      role: true
+    }
+  });
+
   const existingUsername = await prisma.userAccount.findFirst({
     where: {
       username: {
@@ -60,26 +74,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       id: true
     }
   });
-
-  if (existingUsername) {
-    return jsonError("Username is already taken", 409);
-  }
-
-  const existingEmail = await prisma.userAccount.findFirst({
-    where: {
-      email: {
-        equals: invitation.email,
-        mode: "insensitive"
-      }
-    },
-    select: {
-      id: true
-    }
-  });
-
-  if (existingEmail) {
-    return jsonError("This invitation email already has an account", 409);
-  }
 
   const passwordHash = await bcrypt.hash(parsed.data.password, 12);
 
@@ -103,6 +97,30 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         throw new Error("INVITATION_NOT_AVAILABLE");
       }
 
+      if (existingAccountByEmail) {
+        if (existingAccountByEmail.role !== UserRole.OPERATOR) {
+          throw new Error("RESET_ROLE_NOT_ALLOWED");
+        }
+
+        if (existingAccountByEmail.username.toLowerCase() !== username.toLowerCase()) {
+          throw new Error("RESET_USERNAME_MISMATCH");
+        }
+
+        await tx.userAccount.update({
+          where: {
+            id: existingAccountByEmail.id
+          },
+          data: {
+            passwordHash
+          }
+        });
+        return;
+      }
+
+      if (existingUsername) {
+        throw new Error("USERNAME_TAKEN");
+      }
+
       await tx.userAccount.create({
         data: {
           username,
@@ -115,6 +133,18 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   } catch (error) {
     if (error instanceof Error && error.message === "INVITATION_NOT_AVAILABLE") {
       return jsonError("Invitation is invalid or expired", 400);
+    }
+
+    if (error instanceof Error && error.message === "USERNAME_TAKEN") {
+      return jsonError("Username is already taken", 409);
+    }
+
+    if (error instanceof Error && error.message === "RESET_USERNAME_MISMATCH") {
+      return jsonError("Username does not match this account", 400);
+    }
+
+    if (error instanceof Error && error.message === "RESET_ROLE_NOT_ALLOWED") {
+      return jsonError("Password reset via invitation is only allowed for OPERATOR accounts", 403);
     }
 
     if (isUniqueConstraintError(error)) {

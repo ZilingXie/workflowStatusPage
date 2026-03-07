@@ -2,8 +2,6 @@ import { ArrowLeft } from "lucide-react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { AppShell } from "@/components/AppShell";
-import { PriorityBadge } from "@/components/PriorityBadge";
-import { StatusBadge } from "@/components/StatusBadge";
 import { WorkflowRequestAssigneeForm } from "@/components/WorkflowRequestAssigneeForm";
 import { WorkflowRequestComments } from "@/components/WorkflowRequestComments";
 import { WorkflowRequestEditForm } from "@/components/WorkflowRequestEditForm";
@@ -11,8 +9,6 @@ import { WorkflowRequestStatusForm } from "@/components/WorkflowRequestStatusFor
 import { requireServerSession } from "@/lib/auth/server";
 import { getAccountUsernames } from "@/lib/auth/users";
 import { prisma } from "@/lib/db";
-import { TYPE_COLOR_MAP } from "@/lib/ui";
-import { cn } from "@/lib/utils";
 import { canEditWorkflowRequestBase } from "@/lib/workflowRequests";
 
 type Params = {
@@ -20,10 +16,6 @@ type Params = {
     id: string;
   };
 };
-
-function displayTypeLabel(value: string): string {
-  return value === "IMPROVEMENT" ? "Improvement" : "New Workflow";
-}
 
 export default async function WorkflowRequestDetailPage({ params }: Params): Promise<JSX.Element> {
   const session = requireServerSession();
@@ -69,81 +61,14 @@ export default async function WorkflowRequestDetailPage({ params }: Params): Pro
           Back to Workflow Requests
         </Link>
 
-        <section className="rounded-lg border border-border bg-card p-6">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="flex flex-col gap-2">
-              <div className="flex flex-wrap items-center gap-3">
-                <h1 className="text-lg font-semibold text-foreground">{item.title}</h1>
-                <span
-                  className={cn(
-                    "inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium",
-                    TYPE_COLOR_MAP[item.type]
-                  )}
-                >
-                  {displayTypeLabel(item.type)}
-                </span>
-                <StatusBadge status={item.status} />
-              </div>
-              <p className="font-mono text-xs text-muted-foreground">{item.id}</p>
-            </div>
-            <PriorityBadge priority={item.priority} />
-          </div>
-
-          <div className="mt-4 grid grid-cols-2 gap-4 rounded-lg border border-border/50 bg-secondary/20 p-4 sm:grid-cols-4">
-            <InfoItem label="Workflow" value={item.workflowName ?? item.requestedWorkflowName ?? "-"} />
-            <InfoItem label="Created By" value={item.proposedBy} />
-            <InfoItem label="Assignee" value={item.assigneeUsername ?? "Unassigned"} />
-            <InfoItem label="Created At (UTC)" value={item.createdAt.toISOString()} />
-          </div>
-
-          <div className="mt-4 rounded-lg border border-border/50 bg-secondary/20 p-4">
-            <p className="text-xs text-muted-foreground">Description</p>
-            <p className="mt-1 whitespace-pre-wrap text-sm text-foreground/80">{item.description}</p>
-
-            <div className="mt-3 grid gap-2 sm:grid-cols-2">
-              <div>
-                <p className="text-xs text-muted-foreground">Workflow Reference</p>
-                {item.workflowReference &&
-                (item.workflowReference.startsWith("http://") || item.workflowReference.startsWith("https://")) ? (
-                  <a
-                    href={item.workflowReference}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-sm text-primary hover:underline"
-                  >
-                    {item.workflowReference}
-                  </a>
-                ) : (
-                  <p className="text-sm text-foreground">{item.workflowReference ?? "-"}</p>
-                )}
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Source Incident</p>
-                {item.sourceIncident ? (
-                  <Link href={`/incidents/${item.sourceIncident.id}`} className="text-sm text-primary hover:underline">
-                    {item.sourceIncident.id}
-                  </Link>
-                ) : (
-                  <p className="text-sm text-foreground">-</p>
-                )}
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Business Goal</p>
-                <p className="whitespace-pre-wrap text-sm text-foreground">{item.businessGoal ?? "-"}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Expected Trigger</p>
-                <p className="whitespace-pre-wrap text-sm text-foreground">{item.expectedTrigger ?? "-"}</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <WorkflowRequestStatusForm requestId={item.id} status={item.status} role={session.role} />
-
         <WorkflowRequestEditForm
           requestId={item.id}
           type={item.type}
+          status={item.status}
+          proposedBy={item.proposedBy}
+          assigneeUsername={item.assigneeUsername}
+          createdAtIso={item.createdAt.toISOString()}
+          sourceIncidentId={item.sourceIncident?.id ?? null}
           canEdit={canEditBase}
           initialTitle={item.title}
           initialDescription={item.description}
@@ -154,6 +79,8 @@ export default async function WorkflowRequestDetailPage({ params }: Params): Pro
           initialExpectedTrigger={item.expectedTrigger}
           initialPriority={item.priority}
         />
+
+        <WorkflowRequestStatusForm requestId={item.id} status={item.status} role={session.role} />
 
         <WorkflowRequestAssigneeForm
           requestId={item.id}
@@ -214,14 +141,5 @@ export default async function WorkflowRequestDetailPage({ params }: Params): Pro
         />
       </div>
     </AppShell>
-  );
-}
-
-function InfoItem({ label, value }: { label: string; value: string }): JSX.Element {
-  return (
-    <div className="flex flex-col gap-1">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="text-sm text-foreground">{value}</p>
-    </div>
   );
 }

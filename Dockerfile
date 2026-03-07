@@ -1,4 +1,11 @@
-FROM node:20-bookworm-slim AS builder
+FROM node:20-bookworm-slim AS base
+WORKDIR /app
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends openssl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+FROM base AS builder
 WORKDIR /app
 
 COPY package*.json ./
@@ -15,7 +22,7 @@ RUN APP_BASE_URL=http://localhost:3000${NEXT_PUBLIC_BASE_PATH} \
     SESSION_SECRET=build_secret \
     npm run build
 
-FROM node:20-bookworm-slim AS runner
+FROM base AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 

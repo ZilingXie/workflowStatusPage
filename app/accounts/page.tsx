@@ -3,8 +3,9 @@ import { Plus, Shield, UserCog } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
+import { OperatorResetPasswordButton } from "@/components/OperatorResetPasswordButton";
 import { requireServerSession } from "@/lib/auth/server";
-import { listUserAccounts } from "@/lib/auth/users";
+import { listUserAccounts, UserAccountSummary } from "@/lib/auth/users";
 
 export default async function AccountsPage(): Promise<JSX.Element> {
   const session = requireServerSession();
@@ -14,8 +15,10 @@ export default async function AccountsPage(): Promise<JSX.Element> {
   }
 
   const accounts = await listUserAccounts();
-  const adminCount = accounts.filter((account) => account.role === UserRole.ADMIN).length;
-  const operatorCount = accounts.length - adminCount;
+  const adminAccounts = accounts.filter((account) => account.role === UserRole.ADMIN);
+  const operatorAccounts = accounts.filter((account) => account.role === UserRole.OPERATOR);
+  const adminCount = adminAccounts.length;
+  const operatorCount = operatorAccounts.length;
 
   return (
     <AppShell session={session} activeNav="accounts">
@@ -66,44 +69,21 @@ export default async function AccountsPage(): Promise<JSX.Element> {
           </p>
         </section>
 
-        <section className="overflow-hidden rounded-lg border border-border bg-card">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border bg-secondary/30">
-                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Username</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Email</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Role</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Created At (UTC)</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Updated At (UTC)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {accounts.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="px-4 py-10 text-center text-sm text-muted-foreground">
-                      No account records found.
-                    </td>
-                  </tr>
-                ) : (
-                  accounts.map((account) => (
-                    <tr key={account.id} className="border-b border-border/50 transition-colors hover:bg-secondary/20">
-                      <td className="px-4 py-3 font-medium text-foreground">{account.username}</td>
-                      <td className="px-4 py-3 text-xs text-muted-foreground">{account.email ?? "-"}</td>
-                      <td className="px-4 py-3 text-xs text-muted-foreground">{account.role}</td>
-                      <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
-                        {account.createdAt.toISOString()}
-                      </td>
-                      <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
-                        {account.updatedAt.toISOString()}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </section>
+        <div className="flex flex-col gap-6">
+          <RoleAccountCard
+            title="Admin Accounts"
+            subtitle="ADMIN users have full management permissions."
+            accounts={adminAccounts}
+            emptyMessage="No ADMIN account found."
+          />
+          <RoleAccountCard
+            title="Operator Accounts"
+            subtitle="OPERATOR users can handle day-to-day workflow and incident updates."
+            accounts={operatorAccounts}
+            emptyMessage="No OPERATOR account found."
+            enableResetAction
+          />
+        </div>
       </div>
     </AppShell>
   );
@@ -130,5 +110,68 @@ function KpiCard({
         <p className="text-xs text-muted-foreground">{label}</p>
       </div>
     </div>
+  );
+}
+
+function RoleAccountCard({
+  title,
+  subtitle,
+  accounts,
+  emptyMessage,
+  enableResetAction = false
+}: {
+  title: string;
+  subtitle: string;
+  accounts: UserAccountSummary[];
+  emptyMessage: string;
+  enableResetAction?: boolean;
+}): JSX.Element {
+  const columnCount = enableResetAction ? 5 : 4;
+
+  return (
+    <section className="overflow-hidden rounded-lg border border-border bg-card">
+      <div className="border-b border-border/60 bg-secondary/20 px-4 py-3">
+        <h2 className="text-sm font-semibold text-foreground">{title}</h2>
+        <p className="mt-1 text-xs text-muted-foreground">{subtitle}</p>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-border bg-secondary/30">
+              <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Username</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Email</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Created At (UTC)</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Updated At (UTC)</th>
+              {enableResetAction ? (
+                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Actions</th>
+              ) : null}
+            </tr>
+          </thead>
+          <tbody>
+            {accounts.length === 0 ? (
+              <tr>
+                <td colSpan={columnCount} className="px-4 py-10 text-center text-sm text-muted-foreground">
+                  {emptyMessage}
+                </td>
+              </tr>
+            ) : (
+              accounts.map((account) => (
+                <tr key={account.id} className="border-b border-border/50 transition-colors hover:bg-secondary/20">
+                  <td className="px-4 py-3 font-medium text-foreground">{account.username}</td>
+                  <td className="px-4 py-3 text-xs text-muted-foreground">{account.email ?? "-"}</td>
+                  <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{account.createdAt.toISOString()}</td>
+                  <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{account.updatedAt.toISOString()}</td>
+                  {enableResetAction ? (
+                    <td className="px-4 py-3">
+                      <OperatorResetPasswordButton accountId={account.id} email={account.email} />
+                    </td>
+                  ) : null}
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </section>
   );
 }

@@ -63,6 +63,9 @@ export function AccountSetupForm({ token, email }: Props): JSX.Element {
         <p className="mt-1 text-sm text-muted-foreground">
           Invitation email: <span className="font-medium text-foreground">{email}</span>
         </p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          If this email already has an OPERATOR account, enter the existing username to reset password.
+        </p>
       </div>
 
       <div className="flex flex-col gap-1.5">
@@ -124,7 +127,7 @@ export function AccountSetupForm({ token, email }: Props): JSX.Element {
         disabled={loading}
         className="mt-2 h-10 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
       >
-        {loading ? "Submitting..." : "Create Account"}
+        {loading ? "Submitting..." : "Submit"}
       </button>
     </form>
   );

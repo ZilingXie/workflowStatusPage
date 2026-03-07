@@ -44,6 +44,7 @@ MVP implementation using Next.js + TypeScript + Prisma/PostgreSQL.
 - `GET /api/v1/workflow-requests/export.csv`
 - `POST /api/v1/accounts/invitations` (ADMIN only)
 - `POST /api/v1/accounts/invitations/complete`
+- `POST /api/v1/accounts/:id/reset-password` (ADMIN only, OPERATOR accounts)
 - `/workflow-requests`
 - `/workflow-requests/new`
 - `/workflow-requests/:id`

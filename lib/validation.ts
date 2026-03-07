@@ -126,7 +126,10 @@ export const workflowRequestUpdateSchema = z
 
 export const workflowRequestStatusUpdateSchema = z.object({
   toStatus: z.nativeEnum(WorkflowRequestStatus),
-  actionReason: z.string().trim().min(1).max(2000).optional()
+  actionReason: z.preprocess(
+    (value) => (typeof value === "string" && value.trim().length === 0 ? undefined : value),
+    z.string().trim().min(1).max(2000).optional()
+  )
 });
 
 export const workflowRequestAssigneeUpdateSchema = z.object({
