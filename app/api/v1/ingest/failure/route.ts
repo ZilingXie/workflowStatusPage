@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Prisma } from "@prisma/client";
+import { IncidentStatus, Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { env } from "@/lib/env";
@@ -42,6 +42,40 @@ function parseFailureTime(value: string): Date | null {
 }
 
 type IngestFailureInput = z.infer<typeof ingestFailureSchema>;
+
+const ACTIVE_INCIDENT_STATUSES: IncidentStatus[] = [IncidentStatus.OPEN, IncidentStatus.IN_PROGRESS];
+const BASE_SIMILARITY_THRESHOLD = 0.62;
+const ERROR_STOP_WORDS = new Set([
+  "a",
+  "an",
+  "and",
+  "are",
+  "as",
+  "at",
+  "be",
+  "but",
+  "by",
+  "due",
+  "error",
+  "failed",
+  "for",
+  "from",
+  "if",
+  "in",
+  "into",
+  "is",
+  "it",
+  "of",
+  "on",
+  "or",
+  "that",
+  "the",
+  "this",
+  "to",
+  "was",
+  "were",
+  "with"
+]);
 
 type NormalizedFailurePayload = {
   sourceInstance: string;
@@ -90,6 +124,207 @@ function normalizeFailurePayload(payload: IngestFailureInput): NormalizedFailure
   };
 }
 
+function normalizeErrorTextForSimilarity(input: string): string {
+  return input
+    .toLowerCase()
+    .replace(/\b[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b/g, " ")
+    .replace(/\b\d+\b/g, " ")
+    .replace(/[^a-z\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function normalizeErrorToken(token: string): string {
+  if (token === "violates" || token === "violation" || token === "violated") {
+    return "violate";
+  }
+
+  if (token === "constraints") {
+    return "constraint";
+  }
+
+  if (token === "duplicates") {
+    return "duplicate";
+  }
+
+  if (token === "keys") {
+    return "key";
+  }
+
+  return token;
+}
+
+function tokenizeErrorText(input: string): string[] {
+  const normalized = normalizeErrorTextForSimilarity(input);
+  if (!normalized) {
+    return [];
+  }
+
+  const tokens = normalized
+    .split(" ")
+    .map((token) => normalizeErrorToken(token))
+    .filter((token) => token.length >= 3 && !ERROR_STOP_WORDS.has(token));
+
+  return Array.from(new Set(tokens)).sort();
+}
+
+function calculateJaccardSimilarity(left: string, right: string): number {
+  const leftTokens = tokenizeErrorText(left);
+  const rightTokens = tokenizeErrorText(right);
+
+  if (leftTokens.length === 0 || rightTokens.length === 0) {
+    return 0;
+  }
+
+  const leftSet = new Set(leftTokens);
+  const rightSet = new Set(rightTokens);
+
+  let intersection = 0;
+  for (const token of leftSet) {
+    if (rightSet.has(token)) {
+      intersection += 1;
+    }
+  }
+
+  const union = leftSet.size + rightSet.size - intersection;
+  if (union === 0) {
+    return 0;
+  }
+
+  return intersection / union;
+}
+
+function equalsIgnoreCase(left: string | null | undefined, right: string | null | undefined): boolean {
+  if (!left || !right) {
+    return false;
+  }
+
+  return left.trim().toLowerCase() === right.trim().toLowerCase();
+}
+
+function isLikelySameError(
+  incoming: Pick<NormalizedFailurePayload, "summary" | "errorType" | "errorNodeName">,
+  existing: {
+    errorMessage: string;
+    errorType: string | null;
+    errorNodeName: string | null;
+  }
+): boolean {
+  if (
+    incoming.errorType &&
+    existing.errorType &&
+    !equalsIgnoreCase(incoming.errorType, existing.errorType)
+  ) {
+    return false;
+  }
+
+  if (
+    incoming.errorNodeName &&
+    existing.errorNodeName &&
+    !equalsIgnoreCase(incoming.errorNodeName, existing.errorNodeName)
+  ) {
+    return false;
+  }
+
+  const incomingNormalized = normalizeErrorTextForSimilarity(incoming.summary);
+  const existingNormalized = normalizeErrorTextForSimilarity(existing.errorMessage);
+
+  if (
+    incomingNormalized.length >= 20 &&
+    existingNormalized.length >= 20 &&
+    (incomingNormalized.includes(existingNormalized) || existingNormalized.includes(incomingNormalized))
+  ) {
+    return true;
+  }
+
+  const similarity = calculateJaccardSimilarity(incoming.summary, existing.errorMessage);
+
+  let threshold = BASE_SIMILARITY_THRESHOLD;
+  if (incoming.errorType && existing.errorType) {
+    threshold -= 0.1;
+  }
+  if (incoming.errorNodeName && existing.errorNodeName) {
+    threshold -= 0.05;
+  }
+
+  return similarity >= Math.max(0.4, threshold);
+}
+
+async function findSimilarActiveIncident(
+  normalized: Pick<
+    NormalizedFailurePayload,
+    "sourceInstance" | "workflowReference" | "workflowName" | "summary" | "errorType" | "errorNodeName"
+  >
+): Promise<{ id: string } | null> {
+  const candidates = await prisma.incident.findMany({
+    where: {
+      sourceInstance: normalized.sourceInstance,
+      status: {
+        in: ACTIVE_INCIDENT_STATUSES
+      },
+      OR: [
+        { workflowId: normalized.workflowReference },
+        {
+          workflowName: {
+            equals: normalized.workflowName,
+            mode: "insensitive"
+          }
+        }
+      ]
+    },
+    select: {
+      id: true,
+      errorMessage: true,
+      errorType: true,
+      errorNodeName: true
+    },
+    orderBy: {
+      failedAt: "desc"
+    },
+    take: 30
+  });
+
+  for (const candidate of candidates) {
+    if (isLikelySameError(normalized, candidate)) {
+      return { id: candidate.id };
+    }
+  }
+
+  return null;
+}
+
+type UpsertIncidentInput = Pick<
+  NormalizedFailurePayload,
+  | "sourceInstance"
+  | "workflowReference"
+  | "workflowName"
+  | "executionId"
+  | "failedAt"
+  | "summary"
+  | "errorNodeName"
+  | "errorType"
+  | "description"
+  | "executionUrl"
+>;
+
+async function updateIncidentById(incidentId: string, normalized: UpsertIncidentInput) {
+  return prisma.incident.update({
+    where: { id: incidentId },
+    data: {
+      sourceInstance: normalized.sourceInstance,
+      workflowId: normalized.workflowReference,
+      workflowName: normalized.workflowName,
+      executionId: normalized.executionId,
+      failedAt: normalized.failedAt,
+      errorMessage: normalized.summary,
+      errorNodeName: normalized.errorNodeName,
+      errorType: normalized.errorType,
+      errorStack: normalized.description,
+      executionUrl: normalized.executionUrl
+    }
+  });
+}
+
 export async function POST(request: NextRequest): Promise<NextResponse> {
   const token = getBearerToken(request);
 
@@ -115,7 +350,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return jsonError("Invalid failure payload", 400);
   }
 
-  const existing = await prisma.incident.findUnique({
+  const existingByExecution = await prisma.incident.findUnique({
     where: {
       sourceInstance_executionId: {
         sourceInstance: normalized.sourceInstance,
@@ -127,36 +362,42 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
   });
 
-  const incident = await prisma.incident.upsert({
-    where: {
-      sourceInstance_executionId: {
+  const similarActiveIncident = existingByExecution
+    ? null
+    : await findSimilarActiveIncident({
         sourceInstance: normalized.sourceInstance,
-        executionId: normalized.executionId
+        workflowReference: normalized.workflowReference,
+        workflowName: normalized.workflowName,
+        summary: normalized.summary,
+        errorType: normalized.errorType,
+        errorNodeName: normalized.errorNodeName
+      });
+
+  let incident;
+  let deduplicated = false;
+
+  if (existingByExecution) {
+    deduplicated = true;
+    incident = await updateIncidentById(existingByExecution.id, normalized);
+  } else if (similarActiveIncident) {
+    deduplicated = true;
+    incident = await updateIncidentById(similarActiveIncident.id, normalized);
+  } else {
+    incident = await prisma.incident.create({
+      data: {
+        sourceInstance: normalized.sourceInstance,
+        workflowId: normalized.workflowReference,
+        workflowName: normalized.workflowName,
+        executionId: normalized.executionId,
+        failedAt: normalized.failedAt,
+        errorMessage: normalized.summary,
+        errorNodeName: normalized.errorNodeName,
+        errorType: normalized.errorType,
+        errorStack: normalized.description,
+        executionUrl: normalized.executionUrl
       }
-    },
-    create: {
-      sourceInstance: normalized.sourceInstance,
-      workflowId: normalized.workflowReference,
-      workflowName: normalized.workflowName,
-      executionId: normalized.executionId,
-      failedAt: normalized.failedAt,
-      errorMessage: normalized.summary,
-      errorNodeName: normalized.errorNodeName,
-      errorType: normalized.errorType,
-      errorStack: normalized.description,
-      executionUrl: normalized.executionUrl
-    },
-    update: {
-      workflowId: normalized.workflowReference,
-      workflowName: normalized.workflowName,
-      failedAt: normalized.failedAt,
-      errorMessage: normalized.summary,
-      errorNodeName: normalized.errorNodeName,
-      errorType: normalized.errorType,
-      errorStack: normalized.description,
-      executionUrl: normalized.executionUrl
-    }
-  });
+    });
+  }
 
   await prisma.incidentRawPayload.create({
     data: {
@@ -168,9 +409,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   return NextResponse.json(
     {
       success: true,
-      deduplicated: Boolean(existing),
+      deduplicated,
       incidentId: incident.id
     },
-    { status: existing ? 200 : 201 }
+    { status: deduplicated ? 200 : 201 }
   );
 }
