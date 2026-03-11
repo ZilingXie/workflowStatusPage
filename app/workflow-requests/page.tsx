@@ -4,7 +4,6 @@ import Link from "next/link";
 import { AppShell } from "@/components/AppShell";
 import { PriorityBadge } from "@/components/PriorityBadge";
 import { StatusBadge } from "@/components/StatusBadge";
-import { UtcDateTimeFilterInput } from "@/components/UtcDateTimeFilterInput";
 import { WorkflowFilterSelect } from "@/components/WorkflowFilterSelect";
 import { requireServerSession } from "@/lib/auth/server";
 import { prisma } from "@/lib/db";
@@ -16,7 +15,6 @@ import {
 } from "@/lib/workflowRequests";
 
 type SearchParams = Record<string, string | string[] | undefined>;
-const DEFAULT_FILTER_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 
 const TYPE_FILTER_OPTIONS: WorkflowRequestType[] = [
   WorkflowRequestType.IMPROVEMENT,
@@ -86,19 +84,11 @@ export default async function WorkflowRequestsPage({
   searchParams?: SearchParams;
 }): Promise<JSX.Element> {
   const session = requireServerSession();
-  const now = new Date();
-  const fromParam = asString(searchParams.from);
-  const toParam = asString(searchParams.to);
-  const shouldApplyDefaultWindow = !fromParam && !toParam;
-  const defaultFrom = new Date(now.getTime() - DEFAULT_FILTER_WINDOW_MS).toISOString();
-  const defaultTo = now.toISOString();
-  const effectiveFrom = shouldApplyDefaultWindow ? defaultFrom : fromParam;
-  const effectiveTo = shouldApplyDefaultWindow ? defaultTo : toParam;
   const rawParams = toSearchParams({
-    ...searchParams,
-    ...(effectiveFrom ? { from: effectiveFrom } : {}),
-    ...(effectiveTo ? { to: effectiveTo } : {})
+    ...searchParams
   });
+  rawParams.delete("from");
+  rawParams.delete("to");
   const filters = parseWorkflowRequestFilters(rawParams);
   const where = buildWorkflowRequestWhere(filters);
 
@@ -285,22 +275,8 @@ export default async function WorkflowRequestsPage({
                 autoSubmitOnSelect
               />
             </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-xs text-muted-foreground">From (UTC)</label>
-              <UtcDateTimeFilterInput name="from" initialValue={effectiveFrom ?? ""} autoSubmitOnChange />
-            </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-xs text-muted-foreground">To (UTC)</label>
-              <UtcDateTimeFilterInput name="to" initialValue={effectiveTo ?? ""} autoSubmitOnChange />
-            </div>
 
             <input type="hidden" name="pageSize" value={String(filters.pageSize)} />
-            <Link
-              href="/workflow-requests"
-              className="flex h-9 items-center gap-1 rounded-md border border-border px-3 text-xs text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-            >
-              Reset
-            </Link>
           </form>
         </section>
 
