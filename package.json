@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "prisma generate && next build",
     "start": "next start",
+    "test": "node --no-warnings --experimental-strip-types --test tests/*.test.mjs",
     "lint": "next lint",
     "test:phase2": "bash scripts/phase2-idempotency-selftest.sh",
     "db:generate": "prisma generate",

@@ -24,6 +24,23 @@ const ALLOWED_PRIORITIES = new Set<IncidentPriority>([
   IncidentPriority.H
 ]);
 
+export function resolveIncidentListStatusFilter(
+  statusParam: string | undefined,
+  hasExplicitStatusParam: boolean
+): IncidentStatus | undefined {
+  const normalizedStatus = statusParam?.trim();
+
+  if (normalizedStatus && ALLOWED_STATUSES.has(normalizedStatus as IncidentStatus)) {
+    return normalizedStatus as IncidentStatus;
+  }
+
+  if (!hasExplicitStatusParam) {
+    return IncidentStatus.OPEN;
+  }
+
+  return undefined;
+}
+
 export function parseIncidentFilters(params: URLSearchParams): IncidentFilters {
   const pageValue = Number(params.get("page") ?? "1");
   const pageSizeValue = Number(params.get("pageSize") ?? `${DEFAULT_PAGE_SIZE}`);

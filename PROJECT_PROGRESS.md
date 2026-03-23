@@ -134,3 +134,4 @@
 | 2026-03-02 | Phase 2 self-test passed; Phase 2 marked Completed and current phase advanced to Phase 3 | Codex |
 | 2026-03-03 | Added incident priority (`L/M/H`) with default `L` and inline edit on `/incidents` | Codex |
 | 2026-03-04 | Added Workflow Improvement Request module (schema, APIs, UI pages, incident quick-create, docs) and passed lint/build baseline | Codex |
+| 2026-03-23 | Fixed `/incidents` status filter so selecting `All` no longer falls back to `OPEN`, and added a regression test for the status-resolution logic | Codex |

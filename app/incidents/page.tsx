@@ -8,7 +8,11 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { WorkflowFilterSelect } from "@/components/WorkflowFilterSelect";
 import { requireServerSession } from "@/lib/auth/server";
 import { prisma } from "@/lib/db";
-import { buildIncidentWhere, parseIncidentFilters } from "@/lib/incidents";
+import {
+  buildIncidentWhere,
+  parseIncidentFilters,
+  resolveIncidentListStatusFilter
+} from "@/lib/incidents";
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -62,13 +66,16 @@ export default async function IncidentsPage({
 }): Promise<JSX.Element> {
   const session = requireServerSession();
   const statusParam = asString(searchParams.status);
-  const effectiveStatus: IncidentStatus = STATUS_FILTER_OPTIONS.includes(statusParam as IncidentStatus)
-    ? (statusParam as IncidentStatus)
-    : IncidentStatus.OPEN;
-  const rawParams = toSearchParams({
-    ...searchParams,
-    status: effectiveStatus
-  });
+  const hasStatusParam = Object.prototype.hasOwnProperty.call(searchParams, "status");
+  const effectiveStatus = resolveIncidentListStatusFilter(statusParam, hasStatusParam);
+  const rawParams = toSearchParams(searchParams);
+
+  if (effectiveStatus) {
+    rawParams.set("status", effectiveStatus);
+  } else {
+    rawParams.delete("status");
+  }
+
   rawParams.delete("from");
   rawParams.delete("to");
   const filters = parseIncidentFilters(rawParams);
