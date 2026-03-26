@@ -3,6 +3,7 @@
 import { IncidentStatus, UserRole } from "@prisma/client";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { withBasePath } from "@/lib/basePath";
 
 type Props = {
   incidentId: string;
@@ -23,7 +24,7 @@ export function IncidentStatusForm({ incidentId, status, role }: Props): JSX.Ele
     setError(null);
 
     try {
-      const response = await fetch(`/api/v1/incidents/${incidentId}/status`, {
+      const response = await fetch(withBasePath(`/api/v1/incidents/${incidentId}/status`), {
         method: "PATCH",
         headers: {
           "content-type": "application/json"
@@ -32,8 +33,22 @@ export function IncidentStatusForm({ incidentId, status, role }: Props): JSX.Ele
       });
 
       if (!response.ok) {
-        const message = await response.json().catch(() => null);
-        setError(message?.error ?? "Status update failed");
+        const message = await response
+          .json()
+          .catch(() => null)
+          .then((value) => {
+            if (typeof value?.error === "string" && value.error.trim().length > 0) {
+              return value.error;
+            }
+
+            if (typeof value?.message === "string" && value.message.trim().length > 0) {
+              return value.message;
+            }
+
+            return null;
+          });
+
+        setError(message ?? `Status update failed (${response.status})`);
         return;
       }
 
@@ -41,8 +56,8 @@ export function IncidentStatusForm({ incidentId, status, role }: Props): JSX.Ele
       setReopenReason("");
       setActionReason("");
       router.refresh();
-    } catch {
-      setError("Status update failed");
+    } catch (error) {
+      setError(error instanceof Error && error.message ? error.message : "Status update failed");
     } finally {
       setLoading(false);
     }

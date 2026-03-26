@@ -5,6 +5,7 @@ import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { PriorityBadge } from "@/components/PriorityBadge";
+import { withBasePath } from "@/lib/basePath";
 
 type Props = {
   incidentId: string;
@@ -26,7 +27,7 @@ export function IncidentPrioritySelect({ incidentId, initialPriority }: Props): 
 
     setLoading(true);
     try {
-      const response = await fetch(`/api/v1/incidents/${incidentId}/priority`, {
+      const response = await fetch(withBasePath(`/api/v1/incidents/${incidentId}/priority`), {
         method: "PATCH",
         headers: {
           "content-type": "application/json"
