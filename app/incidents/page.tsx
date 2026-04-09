@@ -3,10 +3,12 @@ import { AlertCircle, CheckCircle2, Clock, Download, ExternalLink } from "lucide
 import Link from "next/link";
 import { AppShell } from "@/components/AppShell";
 import { AutoRefreshControls } from "@/components/AutoRefreshControls";
+import { DatabaseUnavailableState } from "@/components/DatabaseUnavailableState";
 import { PriorityBadge } from "@/components/PriorityBadge";
 import { StatusBadge } from "@/components/StatusBadge";
 import { WorkflowFilterSelect } from "@/components/WorkflowFilterSelect";
 import { requireServerSession } from "@/lib/auth/server";
+import { isDatabaseUnavailableError } from "@/lib/database-errors";
 import { prisma } from "@/lib/db";
 import {
   buildIncidentWhere,
@@ -59,37 +61,20 @@ function isHttpUrl(value: string): boolean {
   return value.startsWith("http://") || value.startsWith("https://");
 }
 
-export default async function IncidentsPage({
-  searchParams = {}
-}: {
-  searchParams?: SearchParams;
-}): Promise<JSX.Element> {
-  const session = requireServerSession();
-  const statusParam = asString(searchParams.status);
-  const hasStatusParam = Object.prototype.hasOwnProperty.call(searchParams, "status");
-  const effectiveStatus = resolveIncidentListStatusFilter(statusParam, hasStatusParam);
-  const rawParams = toSearchParams(searchParams);
-
-  if (effectiveStatus) {
-    rawParams.set("status", effectiveStatus);
-  } else {
-    rawParams.delete("status");
-  }
-
-  rawParams.delete("from");
-  rawParams.delete("to");
-  const filters = parseIncidentFilters(rawParams);
-  const where = buildIncidentWhere(filters);
-
-  const [total, items, statusCountsRaw, workflowOptionsRaw] = await Promise.all([
+async function loadIncidentsPageData(
+  where: ReturnType<typeof buildIncidentWhere>,
+  page: number,
+  pageSize: number
+) {
+  return Promise.all([
     prisma.incident.count({ where }),
     prisma.incident.findMany({
       where,
       orderBy: {
         failedAt: "desc"
       },
-      skip: (filters.page - 1) * filters.pageSize,
-      take: filters.pageSize,
+      skip: (page - 1) * pageSize,
+      take: pageSize,
       select: {
         id: true,
         failedAt: true,
@@ -120,6 +105,52 @@ export default async function IncidentsPage({
       take: 1000
     })
   ] as const);
+}
+
+export default async function IncidentsPage({
+  searchParams = {}
+}: {
+  searchParams?: SearchParams;
+}): Promise<JSX.Element> {
+  const session = requireServerSession();
+  const statusParam = asString(searchParams.status);
+  const hasStatusParam = Object.prototype.hasOwnProperty.call(searchParams, "status");
+  const effectiveStatus = resolveIncidentListStatusFilter(statusParam, hasStatusParam);
+  const rawParams = toSearchParams(searchParams);
+
+  if (effectiveStatus) {
+    rawParams.set("status", effectiveStatus);
+  } else {
+    rawParams.delete("status");
+  }
+
+  rawParams.delete("from");
+  rawParams.delete("to");
+  const filters = parseIncidentFilters(rawParams);
+  const where = buildIncidentWhere(filters);
+  const retryHref = rawParams.toString() ? `/incidents?${rawParams.toString()}` : "/incidents";
+
+  let incidentsPageData: Awaited<ReturnType<typeof loadIncidentsPageData>>;
+
+  try {
+    incidentsPageData = await loadIncidentsPageData(where, filters.page, filters.pageSize);
+  } catch (error) {
+    if (isDatabaseUnavailableError(error)) {
+      return (
+        <AppShell session={session} activeNav="incidents">
+          <DatabaseUnavailableState
+            title="Incidents are temporarily unavailable"
+            description="The app can still load, but the incident database is not responding right now. Retry in a moment after the database connection recovers."
+            retryHref={retryHref}
+          />
+        </AppShell>
+      );
+    }
+
+    throw error;
+  }
+
+  const [total, items, statusCountsRaw, workflowOptionsRaw] = incidentsPageData;
 
   const workflowOptions = Array.from(
     new Set(

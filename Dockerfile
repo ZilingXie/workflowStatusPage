@@ -32,4 +32,4 @@ ENV NEXT_PUBLIC_BASE_PATH=${NEXT_PUBLIC_BASE_PATH}
 COPY --from=builder /app /app
 
 EXPOSE 3000
-CMD ["sh", "-c", "npm run db:migrate && npm run start -- -H 0.0.0.0 -p 3000"]
+CMD ["sh", "/app/scripts/start-prod.sh"]

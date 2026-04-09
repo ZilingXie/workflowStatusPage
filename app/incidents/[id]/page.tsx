@@ -2,10 +2,12 @@ import { ArrowLeft, GitPullRequest } from "lucide-react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { AppShell } from "@/components/AppShell";
+import { DatabaseUnavailableState } from "@/components/DatabaseUnavailableState";
 import { IncidentPrioritySelect } from "@/components/IncidentPrioritySelect";
 import { IncidentStatusForm } from "@/components/IncidentStatusForm";
 import { StatusBadge } from "@/components/StatusBadge";
 import { requireServerSession } from "@/lib/auth/server";
+import { isDatabaseUnavailableError } from "@/lib/database-errors";
 import { prisma } from "@/lib/db";
 
 type Params = {
@@ -14,12 +16,10 @@ type Params = {
   };
 };
 
-export default async function IncidentDetailPage({ params }: Params): Promise<JSX.Element> {
-  const session = requireServerSession();
-
-  const incident = await prisma.incident.findUnique({
+async function loadIncidentDetail(id: string) {
+  return prisma.incident.findUnique({
     where: {
-      id: params.id
+      id
     },
     include: {
       events: {
@@ -35,6 +35,32 @@ export default async function IncidentDetailPage({ params }: Params): Promise<JS
       }
     }
   });
+}
+
+export default async function IncidentDetailPage({ params }: Params): Promise<JSX.Element> {
+  const session = requireServerSession();
+
+  let incident: Awaited<ReturnType<typeof loadIncidentDetail>>;
+
+  try {
+    incident = await loadIncidentDetail(params.id);
+  } catch (error) {
+    if (isDatabaseUnavailableError(error)) {
+      return (
+        <AppShell session={session} activeNav="incidents">
+          <DatabaseUnavailableState
+            title="Incident details are temporarily unavailable"
+            description="The incident record could not be loaded because the database is not responding right now. Retry once the database connection is back."
+            retryHref={`/incidents/${params.id}`}
+            backHref="/incidents"
+            backLabel="Back to incidents"
+          />
+        </AppShell>
+      );
+    }
+
+    throw error;
+  }
 
   if (!incident) {
     notFound();
